@@ -514,6 +514,18 @@ function clamp(num, min, max) {
   return Math.max(min, Math.min(max, num));
 }
 
+function poissonSample(lambda) {
+  const boundedLambda = clamp(lambda, 0.05, 4.5);
+  const limit = Math.exp(-boundedLambda);
+  let k = 0;
+  let p = 1;
+  do {
+    k += 1;
+    p *= Math.random();
+  } while (p > limit);
+  return k - 1;
+}
+
 function initials(name) {
   return name
     .split(" ")
@@ -842,13 +854,32 @@ function simulateFixture(game, fixture, decisionChoice, penaltyOrder = null) {
     ? nationalTeamRating(fixture.opponent)
     : opponentClub?.strength ?? clamp(clubStrength - 4 + Math.floor(Math.random() * 8), 68, 90);
   const decisionBoost = decisionChoice?.effect?.morale ?? 0;
-  const performanceBase = playerImpact + decisionBoost + Math.floor(Math.random() * 18) - Math.floor(opponentStrength / 7);
 
-  const teamGoals = clamp(Math.floor((clubStrength + performanceBase) / 40), 0, 5);
-  const oppGoals = clamp(Math.floor((opponentStrength + Math.random() * 35) / 42), 0, 4);
-  const playerGoals = clamp(Math.floor((performanceBase - 60) / 12), 0, teamGoals);
-  const playerAssists = clamp(Math.floor((performanceBase - 58) / 16), 0, Math.max(teamGoals - playerGoals, 0));
-  const rating = clamp(6 + (playerGoals * 0.8) + (playerAssists * 0.5) + (teamGoals > oppGoals ? 0.5 : 0), 5.8, 10);
+  // Forca relativa do time (com um leve empurrao do protagonismo do jogador)
+  // define o numero esperado de gols (lambda) de cada lado, sorteado via Poisson
+  // para gerar placares realistas (a maioria 0-2 gols por time) em vez de sempre 3+.
+  const strengthGap = (clubStrength + (playerImpact - 72) * 0.3) - opponentStrength;
+  const teamLambda = 1.35 + strengthGap / 22 + decisionBoost / 20;
+  const oppLambda = 1.25 - strengthGap / 26;
+
+  const teamGoals = clamp(poissonSample(teamLambda), 0, 7);
+  const oppGoals = clamp(poissonSample(oppLambda), 0, 6);
+
+  // O jogador so marca/da assistencia numa fracao dos gols do time, ponderada
+  // pelo overall dele: um craque participa de mais gols, mas nao de todos.
+  const playerGoalChance = clamp((game.player.overall - 55) / 85, 0.05, 0.55);
+  let playerGoals = 0;
+  for (let i = 0; i < teamGoals; i += 1) {
+    if (Math.random() < playerGoalChance) playerGoals += 1;
+  }
+
+  const playerAssistChance = clamp((game.player.overall - 50) / 110, 0.04, 0.4);
+  let playerAssists = 0;
+  for (let i = 0; i < teamGoals - playerGoals; i += 1) {
+    if (Math.random() < playerAssistChance) playerAssists += 1;
+  }
+
+  const rating = clamp(6 + (playerGoals * 0.9) + (playerAssists * 0.55) + (teamGoals > oppGoals ? 0.4 : teamGoals === oppGoals ? 0 : -0.35), 4.8, 10);
   const penShootout = teamGoals === oppGoals && fixture.importance >= 84 && Math.random() > 0.68;
   const penaltyResolved = penShootout
     ? resolvePenaltyShootout(game, penaltyOrder)
@@ -1982,8 +2013,8 @@ function renderSeasonSummaryShowcase(summary) {
 }
 
 function buildCareerObjectives(game, nextFixture) {
-  const goalsTarget = Math.max(8, Math.ceil(game.player.matches * 0.65) + 4);
-  const assistsTarget = Math.max(5, Math.ceil(game.player.matches * 0.4) + 3);
+  const goalsTarget = Math.max(6, Math.ceil(game.player.matches * 0.32) + 3);
+  const assistsTarget = Math.max(4, Math.ceil(game.player.matches * 0.2) + 2);
   const influenceTarget = Math.max(35, Math.min(80, game.player.influence + 8));
   const energyFloor = 68;
 
