@@ -232,30 +232,58 @@ const clubs = [
   ["Sport", "Brasil", "Brasileirao Serie A", 75, "Pernambuco", ["Santa Cruz", "Nautico"]],
   ["Real Madrid", "Espanha", "La Liga", 90, "Madrid", ["Barcelona", "Atletico de Madrid"]],
   ["Barcelona", "Espanha", "La Liga", 88, "Catalunha", ["Real Madrid", "Espanyol"]],
+  ["Atletico de Madrid", "Espanha", "La Liga", 86, "Madrid", ["Real Madrid", "Barcelona"]],
+  ["Sevilla", "Espanha", "La Liga", 80, "Andaluzia", ["Real Betis"]],
+  ["Real Betis", "Espanha", "La Liga", 78, "Andaluzia", ["Sevilla"]],
+  ["Real Sociedad", "Espanha", "La Liga", 79, "Pais Basco", ["Athletic Bilbao"]],
+  ["Athletic Bilbao", "Espanha", "La Liga", 80, "Pais Basco", ["Real Sociedad"]],
+  ["Villarreal", "Espanha", "La Liga", 79, "Valencia", []],
   ["Manchester City", "Inglaterra", "Premier League", 89, "Manchester", ["Manchester United", "Liverpool"]],
   ["Liverpool", "Inglaterra", "Premier League", 88, "Liverpool", ["Manchester United", "Everton"]],
   ["Arsenal", "Inglaterra", "Premier League", 87, "Londres", ["Chelsea", "Tottenham"]],
   ["Chelsea", "Inglaterra", "Premier League", 84, "Londres", ["Arsenal", "Tottenham"]],
   ["Manchester United", "Inglaterra", "Premier League", 85, "Manchester", ["Manchester City", "Liverpool"]],
+  ["Tottenham", "Inglaterra", "Premier League", 83, "Londres", ["Arsenal", "Chelsea"]],
+  ["Newcastle", "Inglaterra", "Premier League", 81, "Newcastle", []],
+  ["Aston Villa", "Inglaterra", "Premier League", 80, "Birmingham", []],
+  ["West Ham", "Inglaterra", "Premier League", 77, "Londres", []],
   ["Bayern de Munique", "Alemanha", "Bundesliga", 88, "Baviera", ["Borussia Dortmund"]],
   ["Borussia Dortmund", "Alemanha", "Bundesliga", 84, "Renania", ["Bayern de Munique"]],
   ["Bayer Leverkusen", "Alemanha", "Bundesliga", 86, "Renania", ["Koln"]],
+  ["RB Leipzig", "Alemanha", "Bundesliga", 82, "Saxonia", []],
+  ["Eintracht Frankfurt", "Alemanha", "Bundesliga", 79, "Frankfurt", []],
+  ["Stuttgart", "Alemanha", "Bundesliga", 78, "Stuttgart", []],
   ["PSG", "Franca", "Ligue 1", 87, "Paris", ["Marseille"]],
   ["Marseille", "Franca", "Ligue 1", 81, "Marselha", ["PSG"]],
   ["Lyon", "Franca", "Ligue 1", 79, "Lyon", ["Saint-Etienne"]],
+  ["Monaco", "Franca", "Ligue 1", 80, "Monaco", []],
+  ["Lille", "Franca", "Ligue 1", 78, "Lille", []],
+  ["Nice", "Franca", "Ligue 1", 76, "Nice", []],
   ["Benfica", "Portugal", "Liga Portugal", 83, "Lisboa", ["Sporting", "Porto"]],
   ["Porto", "Portugal", "Liga Portugal", 84, "Porto", ["Benfica", "Sporting"]],
   ["Sporting", "Portugal", "Liga Portugal", 83, "Lisboa", ["Benfica", "Porto"]],
-  ["Atletico de Madrid", "Espanha", "La Liga", 86, "Madrid", ["Real Madrid", "Barcelona"]],
-  ["Sevilla", "Espanha", "La Liga", 80, "Andaluzia", ["Betis"]],
+  ["Braga", "Portugal", "Liga Portugal", 78, "Braga", []],
+  ["Vitoria Guimaraes", "Portugal", "Liga Portugal", 75, "Guimaraes", []],
   ["Juventus", "Italia", "Serie A", 86, "Turim", ["Inter", "Milan"]],
   ["Inter", "Italia", "Serie A", 87, "Milao", ["Milan", "Juventus"]],
   ["Milan", "Italia", "Serie A", 84, "Milao", ["Inter", "Juventus"]],
   ["Napoli", "Italia", "Serie A", 83, "Napoles", ["Roma"]],
+  ["Roma", "Italia", "Serie A", 81, "Roma", ["Lazio", "Napoli"]],
+  ["Lazio", "Italia", "Serie A", 79, "Roma", ["Roma"]],
+  ["Atalanta", "Italia", "Serie A", 80, "Bergamo", []],
   ["Ajax", "Holanda", "Eredivisie", 81, "Amsterda", ["Feyenoord", "PSV"]],
-  ["Inter Miami", "Estados Unidos", "MLS", 76, "Florida", ["Orlando City", "Atlanta United"]],
+  ["PSV", "Holanda", "Eredivisie", 82, "Eindhoven", ["Ajax"]],
+  ["Feyenoord", "Holanda", "Eredivisie", 80, "Roterda", ["Ajax"]],
+  ["Inter Miami", "Estados Unidos", "MLS", 76, "Florida", ["Orlando City"]],
+  ["Orlando City", "Estados Unidos", "MLS", 73, "Florida", ["Inter Miami"]],
+  ["LA Galaxy", "Estados Unidos", "MLS", 75, "California", []],
+  ["Seattle Sounders", "Estados Unidos", "MLS", 74, "Washington", []],
   ["River Plate", "Argentina", "Liga Argentina", 83, "Buenos Aires", ["Boca Juniors"]],
-  ["Boca Juniors", "Argentina", "Liga Argentina", 82, "Buenos Aires", ["River Plate"]]
+  ["Boca Juniors", "Argentina", "Liga Argentina", 82, "Buenos Aires", ["River Plate"]],
+  ["Racing", "Argentina", "Liga Argentina", 78, "Buenos Aires", ["Independiente"]],
+  ["Independiente", "Argentina", "Liga Argentina", 76, "Buenos Aires", ["Racing"]],
+  ["Club America", "Mexico", "Liga MX", 80, "Cidade do Mexico", ["Chivas Guadalajara"]],
+  ["Chivas Guadalajara", "Mexico", "Liga MX", 76, "Guadalajara", ["Club America"]]
 ].map(([name, country, competition, strength, state, rivals]) => ({
   name,
   country,
@@ -1582,23 +1610,6 @@ function renderDecisionMarkup(decision) {
       </div>
     `;
   }
-
-function renderSummaryMarkup(summary) {
-  return `
-    <div class="card">
-      <span class="section-label">Resumo da temporada ${summary.year}</span>
-      <div class="grid four" style="margin-top: 14px;">
-        ${metricCard("Jogos", summary.matches)}
-        ${metricCard("Gols", summary.goals)}
-        ${metricCard("Assistencias", summary.assists)}
-        ${metricCard("Overall final", summary.overall)}
-      </div>
-      <p class="small-copy" style="margin-top: 14px;">Maior vitima: ${summary.biggestVictim}. Diretoria: ${summary.boardConfidence}. Torcida: ${summary.fanLove}.</p>
-      <p style="margin-top: 10px;">${summary.awards.length ? summary.awards.join(" • ") : "Sem premios individuais marcantes nesta temporada."}</p>
-      ${summary.forcedRetirement ? `<p class="small-copy" style="margin-top: 10px;">Aposentadoria automatica ativada por idade/desempenho.</p>` : ""}
-    </div>
-  `;
-}
 
 function renderSeasonSummaryShowcase(summary) {
   const deltaLabel = summary.overallDelta > 0 ? `+${summary.overallDelta}` : `${summary.overallDelta}`;
