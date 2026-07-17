@@ -214,67 +214,53 @@ function buildNationalGroupFixtures(nationality, torneioName) {
 // LOGOS: imagens de clubes e competicoes (com fallback de iniciais)
 // =====================================================================
 const clubLogos = {
-  "Flamengo": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/flamengo.png",
-  "Palmeiras": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/palmeiras.png",
-  "Corinthians": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/corinthians.png",
-  "Sao Paulo": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/saopaulo.png",
-  "Santos": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/santossp.png",
-  "Fluminense": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/fluminense.png",
-  "Botafogo": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/botafogo.png",
-  "Vasco": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/vascodagama.png",
-  "Atletico-MG": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/atleticomg.png",
-  "Cruzeiro": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/cruzeiro.png",
-  "Gremio": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/gremio.png",
-  "Internacional": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/interrs.png",
-  "Bahia": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/bahia.png",
-  "Vitoria": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/vitoria.png",
-  "Athletico-PR": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/atleticopr.png",
-  "Coritiba": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/coritiba.png",
-  "Sport": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/sportrecife.png",
-  "Real Madrid": "https://sportlogos.github.io/football.db.logos/europe/es-espana/madrid.png",
-  "Barcelona": "https://sportlogos.github.io/football.db.logos/europe/es-espana/barcelona.png",
-  "Manchester City": "https://sportlogos.github.io/football.db.logos/europe/en-england/mancity.png",
-  "Liverpool": "https://sportlogos.github.io/football.db.logos/europe/en-england/liverpool.png",
-  "Arsenal": "https://sportlogos.github.io/football.db.logos/europe/en-england/arsenal.png",
-  "Chelsea": "https://sportlogos.github.io/football.db.logos/europe/en-england/chelsea.png",
-  "Manchester United": "https://sportlogos.github.io/football.db.logos/europe/en-england/manutd.png",
-  "Bayern de Munique": "https://sportlogos.github.io/football.db.logos/europe/de-deutschland/i-bayern.png",
-  "Borussia Dortmund": "https://sportlogos.github.io/football.db.logos/europe/de-deutschland/i-dortmund.png",
-  "Bayer Leverkusen": "https://sportlogos.github.io/football.db.logos/europe/de-deutschland/i-leverkusen.png",
-  "PSG": "https://sportlogos.github.io/football.db.logos/europe/fr-france/paris.png",
-  "Marseille": "https://sportlogos.github.io/football.db.logos/europe/fr-france/marseille.png",
-  "Lyon": "https://sportlogos.github.io/football.db.logos/europe/fr-france/lyon.png",
-  "Benfica": "https://sportlogos.github.io/football.db.logos/europe/pt-portugal/benfica.png",
-  "Porto": "https://sportlogos.github.io/football.db.logos/europe/pt-portugal/porto.png",
-  "Sporting": "https://sportlogos.github.io/football.db.logos/europe/pt-portugal/sporting.png",
-  "Atletico de Madrid": "https://sportlogos.github.io/football.db.logos/europe/es-espana/atletico.png",
-  "Sevilla": "https://sportlogos.github.io/football.db.logos/europe/es-espana/sevilla.png",
-  "Juventus": "https://sportlogos.github.io/football.db.logos/europe/it-italia/juventus.png",
-  "Inter": "https://sportlogos.github.io/football.db.logos/europe/it-italia/inter.png",
-  "Milan": "https://sportlogos.github.io/football.db.logos/europe/it-italia/milan.png",
-  "Napoli": "https://sportlogos.github.io/football.db.logos/europe/it-italia/napoli.png",
-  "River Plate": "https://sportlogos.github.io/football.db.logos/south-america/ar-argentina/riverplate.png",
-  "Boca Juniors": "https://sportlogos.github.io/football.db.logos/south-america/ar-argentina/bocajuniors.png",
-  "Ajax": "https://sportlogos.github.io/football.db.logos/europe/nl-nederland/ajax.png"
+  "Real Madrid": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Madrid.png",
+  "Barcelona": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/FC%20Barcelona.png",
+  "Atletico de Madrid": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Atl%C3%A9tico%20de%20Madrid.png",
+  "Sevilla": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Sevilla%20FC.png",
+  "Real Betis": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Betis%20Balompi%C3%A9.png",
+  "Real Sociedad": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Sociedad.png",
+  "Athletic Bilbao": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Athletic%20Bilbao.png",
+  "Villarreal": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Villarreal%20CF.png",
+  "Manchester City": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20City.png",
+  "Liverpool": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Liverpool%20FC.png",
+  "Arsenal": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Arsenal%20FC.png",
+  "Chelsea": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Chelsea%20FC.png",
+  "Manchester United": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20United.png",
+  "Tottenham": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Tottenham%20Hotspur.png",
+  "Newcastle": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Newcastle%20United.png",
+  "Aston Villa": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Aston%20Villa.png",
+  "West Ham": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/West%20Ham%20United.png",
+  "Bayern de Munique": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Bayern%20Munich.png",
+  "Borussia Dortmund": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Borussia%20Dortmund.png",
+  "Bayer Leverkusen": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Bayer%2004%20Leverkusen.png",
+  "RB Leipzig": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/RB%20Leipzig.png",
+  "Eintracht Frankfurt": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Eintracht%20Frankfurt.png",
+  "Stuttgart": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/VfB%20Stuttgart.png",
+  "PSG": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Paris%20Saint-Germain.png",
+  "Marseille": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Marseille.png",
+  "Lyon": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Lyon.png",
+  "Monaco": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/AS%20Monaco.png",
+  "Lille": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/LOSC%20Lille.png",
+  "Nice": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/OGC%20Nice.png",
+  "Benfica": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/SL%20Benfica.png",
+  "Porto": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/FC%20Porto.png",
+  "Sporting": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Sporting%20CP.png",
+  "Braga": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/SC%20Braga.png",
+  "Vitoria Guimaraes": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Vit%C3%B3ria%20Guimar%C3%A3es%20SC.png",
+  "Juventus": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Juventus%20FC.png",
+  "Inter": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Inter%20Milan.png",
+  "Milan": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/AC%20Milan.png",
+  "Napoli": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/SSC%20Napoli.png",
+  "Roma": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/AS%20Roma.png",
+  "Lazio": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/SS%20Lazio.png",
+  "Atalanta": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Atalanta%20BC.png",
+  "Ajax": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Ajax%20Amsterdam.png",
+  "PSV": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/PSV%20Eindhoven.png",
+  "Feyenoord": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Feyenoord%20Rotterdam.png"
 };
 
-const competitionLogos = {
-  "Brasileirao Serie A": "https://images.seeklogo.com/logo-png/38/1/campeonato-brasileiro-serie-a-logo-png_seeklogo-387045.png",
-  "Brasileirao Serie B": "https://images.seeklogo.com/logo-png/38/1/campeonato-brasileiro-serie-b-logo-png_seeklogo-387046.png",
-  "Copa do Brasil": "https://images.seeklogo.com/logo-png/38/1/copa-do-brasil-logo-png_seeklogo-387048.png",
-  "CONMEBOL Libertadores": "https://images.seeklogo.com/logo-png/30/2/copa-libertadores-logo-png_seeklogo-302507.png",
-  "CONMEBOL Sudamericana": "https://images.seeklogo.com/logo-png/30/2/copa-sudamericana-logo-png_seeklogo-302506.png",
-  "UEFA Champions League": "https://images.seeklogo.com/logo-png/30/1/uefa-champions-league-logo-png_seeklogo-303417.png",
-  "UEFA Europa League": "https://images.seeklogo.com/logo-png/30/1/uefa-europa-league-logo-png_seeklogo-303431.png",
-  "UEFA Conference League": "https://images.seeklogo.com/logo-png/45/1/uefa-europa-conference-league-logo-png_seeklogo-456226.png",
-  "Copa do Mundo": "https://images.seeklogo.com/logo-png/43/1/fifa-world-cup-logo-png_seeklogo-438141.png",
-  "La Liga": "https://images.seeklogo.com/logo-png/13/1/la-liga-logo-png_seeklogo-139024.png",
-  "Premier League": "https://images.seeklogo.com/logo-png/27/1/premier-league-logo-png_seeklogo-274369.png",
-  "Bundesliga": "https://images.seeklogo.com/logo-png/12/1/bundesliga-logo-png_seeklogo-124278.png",
-  "Ligue 1": "https://images.seeklogo.com/logo-png/37/1/ligue-1-logo-png_seeklogo-374912.png",
-  "Liga Portugal": "https://images.seeklogo.com/logo-png/40/1/liga-portugal-logo-png_seeklogo-400226.png",
-  "MLS": "https://images.seeklogo.com/logo-png/28/1/major-league-soccer-logo-png_seeklogo-283502.png"
-};
+const competitionLogos = {};
 
 // =====================================================================
 // ELENCO: pools de nomes para gerar companheiros de time
@@ -1553,6 +1539,7 @@ function advanceRound() {
           }
         : null
     });
+    autoPlayMatch();
   }, 1100);
 }
 
@@ -1580,6 +1567,32 @@ function closeMatchFocus() {
 
 function continueFromPostMatch() {
   setMatchFocus(null);
+}
+
+function autoPlayMatch() {
+  window.setTimeout(() => {
+    const focus = state.matchFocus;
+    if (!focus || focus.stage !== "live" || focus.playback?.finished) return;
+    advanceMatchPlayback();
+    autoPlayMatch();
+  }, 850);
+}
+
+function skipMatchPlayback() {
+  const focus = state.matchFocus;
+  if (!focus?.events?.length) return;
+  const revealedEvents = focus.events;
+  const score = deriveScoreFromEvents(revealedEvents);
+  setMatchFocus({
+    ...focus,
+    stage: "postmatch",
+    playback: {
+      timelineIndex: focus.events.length - 1,
+      revealedEvents,
+      score,
+      finished: true
+    }
+  });
 }
 
 function advanceMatchPlayback() {
@@ -1886,9 +1899,9 @@ function renderMatchFocusOverlay(focus, game) {
                   ${metricCard("Gols seus", focus.goals)}
                   ${metricCard("Assistencias", focus.assists)}
                 </div>
-                <p class="small-copy" style="margin-top: 14px;">${playback.finished ? "A transmissao especial terminou. Agora voce pode fechar e voltar ao painel." : "Clique para revelar o proximo momento importante da partida."}</p>
+                <p class="small-copy" style="margin-top: 14px;">${playback.finished ? "A transmissao especial terminou. Agora voce pode fechar e voltar ao painel." : "A partida esta avancando sozinha. Voce tambem pode pular direto para o resultado."}</p>
                 <div class="button-row" style="margin-top: 16px;">
-                  <button type="button" data-step-match-focus>${playback.finished ? "Fechar partida" : "Avancar lance"}</button>
+                  <button type="button" data-step-match-focus>${playback.finished ? "Fechar partida" : "Pular para o resultado"}</button>
                 </div>
               ` : ready ? `
                 <h3>${focus.selectedBoost.label}</h3>
@@ -2266,24 +2279,33 @@ function renderObjectiveCard(objective) {
 }
 
 function renderSeasonCalendar(game) {
-  const focusFixtures = game.fixtures.slice(0, 10);
+  const fixtures = game.fixtures;
+  if (!fixtures.length) {
+    return `<div class="timeline-item">Sem jogos cadastrados.</div>`;
+  }
+  const defaultIndex = fixtures.findIndex((item) => !item.played);
+  const selectedIndex = fixtures.findIndex((item) => item.id === state.selectedFixtureId);
+  const currentIndex = selectedIndex !== -1 ? selectedIndex : defaultIndex !== -1 ? defaultIndex : fixtures.length - 1;
+  const fixture = fixtures[currentIndex];
+
   return `
-    <div class="season-calendar-grid">
-      ${focusFixtures.map((fixture) => `
-        <button class="season-calendar-card ${fixture.played ? "played" : fixture.importance >= 88 ? "spotlight" : ""} ${state.selectedFixtureId === fixture.id ? "active" : ""}" type="button" data-fixture-detail="${fixture.id}">
-          <div class="season-calendar-top">
-            <span class="section-label">${fixture.roundLabel}</span>
-            <span class="pill">${fixture.importance}</span>
-          </div>
-          <strong>${fixture.opponent}</strong>
-          <span class="small-copy">${fixture.competition}</span>
-          <div class="season-calendar-meta">
-            <span>${fixture.played ? fixture.result : "Por jogar"}</span>
-            <span>${fixture.played ? `${fixture.playerGoals}G / ${fixture.playerAssists}A` : fixture.live ? "tempo real" : "simulado"}</span>
-          </div>
-        </button>
-      `).join("")}
+    <div class="calendar-carousel">
+      <button class="carousel-arrow" type="button" data-calendar-nav="-1" ${currentIndex <= 0 ? "disabled" : ""}>‹</button>
+      <button class="season-calendar-card ${fixture.played ? "played" : fixture.importance >= 88 ? "spotlight" : ""} active" type="button" data-fixture-detail="${fixture.id}">
+        <div class="season-calendar-top">
+          <span class="section-label">${fixture.roundLabel}</span>
+          <span class="pill">${fixture.importance}</span>
+        </div>
+        <strong>${fixture.opponent}</strong>
+        <span class="small-copy">${fixture.competition}</span>
+        <div class="season-calendar-meta">
+          <span>${fixture.played ? fixture.result : "Por jogar"}</span>
+          <span>${fixture.played ? `${fixture.playerGoals}G / ${fixture.playerAssists}A` : fixture.live ? "tempo real" : "simulado"}</span>
+        </div>
+      </button>
+      <button class="carousel-arrow" type="button" data-calendar-nav="1" ${currentIndex >= fixtures.length - 1 ? "disabled" : ""}>›</button>
     </div>
+    <p class="small-copy" style="margin-top: 10px; text-align: center;">Jogo ${currentIndex + 1} de ${fixtures.length}</p>
   `;
 }
 
@@ -2298,7 +2320,6 @@ function renderFixtureDetailCard(game, fixture) {
     `;
   }
 
-  const competitionInfo = competitionLibrary.find((item) => item.name === fixture.competition);
   const rivalry = game.club.rivals.includes(fixture.opponent);
   const statusCopy = fixture.played
     ? `${fixture.result} com nota ${fixture.rating}.`
@@ -2324,18 +2345,7 @@ function renderFixtureDetailCard(game, fixture) {
           <strong>${fixture.opponent}</strong>
         </div>
       </div>
-      <p class="small-copy">${statusCopy}</p>
-      <div class="grid two" style="margin-top: 14px;">
-        ${metricCard("Competicao", fixture.competition)}
-        ${metricCard("Impacto", fixture.importance)}
-        ${metricCard("Rivalidade", rivalry ? "Classico" : "Normal")}
-        ${metricCard("Status", fixture.played ? "Concluido" : "Agendado")}
-      </div>
-      <div class="timeline" style="margin-top: 14px;">
-        <div class="timeline-item">${competitionInfo?.format ?? "Competicao em base inicial do modo carreira."}</div>
-        <div class="timeline-item">${rivalry ? "Esse duelo tem carga de rivalidade e tende a mexer mais com torcida, tecnico e moral." : "Esse confronto pesa mais pelo momento da campanha do que por rivalidade historica."}</div>
-        <div class="timeline-item">${fixture.played ? `${fixture.playerGoals} gol(s), ${fixture.playerAssists} assistencia(s) e leitura direta no seu protagonismo.` : "Uma boa atuacao aqui pode empurrar reputacao, diretoria e espaco no elenco."}</div>
-      </div>
+      <p class="small-copy">${statusCopy}${rivalry ? " • Classico" : ""}</p>
       ${fixture.events?.length ? `<div class="timeline match-event-timeline" style="margin-top: 14px;">${fixture.events.map((event) => `<div class="timeline-item match-event-item ${event.type}"><strong>${event.minute}'</strong> ${event.text}</div>`).join("")}</div>` : ""}
     </div>
   `;
@@ -2689,7 +2699,7 @@ function renderCareerTab(game) {
             continueFromPostMatch();
             return;
           }
-          advanceMatchPlayback();
+          skipMatchPlayback();
         });
       });
       document.querySelectorAll("[data-continue-postmatch]").forEach((button) => {
@@ -2697,6 +2707,16 @@ function renderCareerTab(game) {
       });
       document.querySelectorAll("[data-fixture-detail]").forEach((button) => {
         button.addEventListener("click", () => setState({ selectedFixtureId: button.dataset.fixtureDetail }));
+      });
+      document.querySelectorAll("[data-calendar-nav]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const fixtures = game.fixtures;
+          const defaultIndex = fixtures.findIndex((item) => !item.played);
+          const selectedIndex = fixtures.findIndex((item) => item.id === state.selectedFixtureId);
+          const currentIndex = selectedIndex !== -1 ? selectedIndex : defaultIndex !== -1 ? defaultIndex : fixtures.length - 1;
+          const nextIndex = clamp(currentIndex + Number(button.dataset.calendarNav), 0, fixtures.length - 1);
+          setState({ selectedFixtureId: fixtures[nextIndex].id });
+        });
       });
     });
 
@@ -3250,44 +3270,6 @@ function renderDashboard() {
     </aside>
 
     <div class="content-stack">
-      <div class="display-panel player-stage">
-        <div class="player-stage-grid">
-          <div class="player-stage-copy">
-            <div class="stage-kicker">${game.season} • ${game.player.nationality}</div>
-            <div class="stage-name">${game.player.name}</div>
-            <div class="stage-subline">${game.player.position} • ${game.player.archetype} • camisa ${game.player.number}. Um painel vivo da sua ascensao no futebol.</div>
-            <div class="stage-chip-row">
-              <span class="stage-chip">${game.player.foot}</span>
-              <span class="stage-chip">${game.player.club}</span>
-              <span class="stage-chip">${game.player.league}</span>
-            </div>
-          </div>
-          <div class="player-stage-visual">
-            <div class="stage-stat-grid">
-              <div class="stage-stat">
-                <span class="mini-label">Overall</span>
-                <strong>${game.player.overall}</strong>
-                <span class="small-copy">nivel atual</span>
-              </div>
-              <div class="stage-stat">
-                <span class="mini-label">G/A</span>
-                <strong>${game.player.goals}/${game.player.assists}</strong>
-                <span class="small-copy">producao ofensiva</span>
-              </div>
-              <div class="stage-stat">
-                <span class="mini-label">Jogos</span>
-                <strong>${game.player.matches}</strong>
-                <span class="small-copy">na campanha</span>
-              </div>
-              <div class="stage-stat">
-                <span class="mini-label">Influencia</span>
-                <strong>${game.player.influence}</strong>
-                <span class="small-copy">peso no elenco</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       ${renderActiveTab(game).outerHTML}
     </div>
   `;

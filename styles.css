@@ -544,6 +544,32 @@ h3 {
   gap: 12px;
 }
 
+.calendar-carousel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.carousel-arrow {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 1.3rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.carousel-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .season-calendar-card {
   display: grid;
   gap: 8px;
