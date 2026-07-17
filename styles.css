@@ -1671,6 +1671,33 @@ a {
   align-items: stretch;
 }
 
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+}
+
+.slot-card.empty {
+  align-items: flex-start;
+  justify-content: center;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.slot-card strong {
+  font-size: 1.1rem;
+}
+
 .landing-primary-btn {
   min-width: 178px;
   background: var(--mint);

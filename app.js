@@ -1,4 +1,10 @@
 const STORAGE_KEY = "ascensao-save-v3";
+const SLOT_COUNT = 3;
+const ACTIVE_SLOT_KEY = "ascensao-active-slot";
+
+function slotKey(slotId) {
+  return `ascensao-slot-${slotId}`;
+}
 
 // =====================================================================
 // DADOS DO JOGO: lendas, arquetipos e trilhas de desenvolvimento
@@ -451,6 +457,8 @@ function createInitialState() {
     transition: null,
     penaltyPrompt: null,
     matchFocus: null,
+    activeSlot: null,
+    pendingSlot: null,
     game: null
   };
 }
@@ -458,19 +466,97 @@ function createInitialState() {
 let state = loadState();
 render();
 
-function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return createInitialState();
-
-  try {
-    return { ...createInitialState(), ...JSON.parse(raw) };
-  } catch {
-    return createInitialState();
+function migrateLegacySave() {
+  const legacy = localStorage.getItem(STORAGE_KEY);
+  if (legacy && !localStorage.getItem(slotKey(1))) {
+    localStorage.setItem(slotKey(1), legacy);
+    localStorage.setItem(ACTIVE_SLOT_KEY, "1");
   }
 }
 
+function loadState() {
+  migrateLegacySave();
+  const activeSlotRaw = localStorage.getItem(ACTIVE_SLOT_KEY);
+  const activeSlot = activeSlotRaw ? Number(activeSlotRaw) : null;
+
+  if (activeSlot) {
+    const raw = localStorage.getItem(slotKey(activeSlot));
+    if (raw) {
+      try {
+        return { ...createInitialState(), ...JSON.parse(raw), activeSlot };
+      } catch {
+        return createInitialState();
+      }
+    }
+  }
+
+  return createInitialState();
+}
+
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (state.game && state.activeSlot) {
+    localStorage.setItem(slotKey(state.activeSlot), JSON.stringify(state));
+    localStorage.setItem(ACTIVE_SLOT_KEY, String(state.activeSlot));
+  }
+}
+
+function getSlotSummaries() {
+  const slots = [];
+  for (let slotId = 1; slotId <= SLOT_COUNT; slotId += 1) {
+    const raw = localStorage.getItem(slotKey(slotId));
+    if (!raw) {
+      slots.push({ id: slotId, empty: true });
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      const g = parsed.game;
+      slots.push({
+        id: slotId,
+        empty: !g,
+        playerName: g?.player?.name ?? "Carreira",
+        club: g?.player?.club ?? "-",
+        overall: g?.player?.overall ?? "-",
+        season: g?.season ?? "-",
+        retired: !!g?.retired
+      });
+    } catch {
+      slots.push({ id: slotId, empty: true });
+    }
+  }
+  return slots;
+}
+
+function continueSlot(slotId) {
+  const raw = localStorage.getItem(slotKey(slotId));
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    localStorage.setItem(ACTIVE_SLOT_KEY, String(slotId));
+    state = { ...createInitialState(), ...parsed, activeSlot: slotId, pendingSlot: null };
+    render();
+  } catch {
+    // slot corrompido, ignora
+  }
+}
+
+function startNewInSlot(slotId) {
+  state = { ...createInitialState(), pendingSlot: slotId };
+  render();
+}
+
+function deleteSlot(slotId) {
+  localStorage.removeItem(slotKey(slotId));
+  if (state.activeSlot === slotId) {
+    localStorage.removeItem(ACTIVE_SLOT_KEY);
+    state = createInitialState();
+  }
+  render();
+}
+
+function goToSlotMenu() {
+  state = { ...createInitialState() };
+  render();
 }
 
 function setState(patch) {
@@ -587,6 +673,7 @@ function startCareer(formData) {
     isCaptain: false,
     setPieces: [],
     competitionStats: {},
+    injury: null,
     development: {
       xp: 0,
       level: 1,
@@ -643,6 +730,9 @@ function startCareer(formData) {
     seasonSummary: null
   };
 
+  const slotId = state.pendingSlot ?? 1;
+  localStorage.setItem(ACTIVE_SLOT_KEY, String(slotId));
+  state = { ...state, activeSlot: slotId, pendingSlot: null };
   setState({ game, tab: "carreira" });
 }
 
@@ -965,6 +1055,78 @@ function simulateFixture(game, fixture, decisionChoice, penaltyOrder = null) {
 
   applyDevelopmentProgress(game);
   maybeGenerateTransferOffer(game, fixture);
+
+  return fixture;
+}
+
+function maybeTriggerInjury(game) {
+  if (game.player.injury) return false;
+
+  const injuryChance = clamp(game.body.injuryRisk / 500, 0.01, 0.12);
+  if (Math.random() > injuryChance) return false;
+
+  const roll = Math.random();
+  const severity = roll < 0.55 ? "leve" : roll < 0.87 ? "moderada" : "grave";
+  const matchesOut = severity === "leve" ? 1 + Math.floor(Math.random() * 2) : severity === "moderada" ? 3 + Math.floor(Math.random() * 3) : 6 + Math.floor(Math.random() * 5);
+
+  game.player.injury = { severity, matchesOut, totalMatches: matchesOut };
+  game.body.injuryRisk = clamp(game.body.injuryRisk - 35, 5, 100);
+  game.body.fitness = clamp(game.body.fitness - 25, 15, 100);
+  game.player.morale = clamp(game.player.morale - 6, 25, 99);
+
+  game.inbox.unshift(`Lesao ${severity}! Voce vai desfalcar o ${game.player.club} por ${matchesOut} jogo(s) enquanto se recupera.`);
+  game.socialFeed.unshift({
+    id: crypto.randomUUID(),
+    author: randomFrom(["Reporter do Lance", "Central do Torcedor", "Departamento Medico"]),
+    text: `Boletim medico: ${game.player.name} sofreu uma lesao ${severity} e desfalca o ${game.player.club} pelas proximas rodadas.`,
+    impact: "moral"
+  });
+
+  return true;
+}
+
+function simulateMissedFixture(game, fixture) {
+  const clubStrength = fixture.isNational ? nationalTeamRating(game.player.nationality) : game.club.difficulty;
+  const opponentClub = clubs.find((item) => item.name === fixture.opponent);
+  const opponentStrength = fixture.isNational
+    ? nationalTeamRating(fixture.opponent)
+    : opponentClub?.strength ?? clamp(clubStrength - 4 + Math.floor(Math.random() * 8), 68, 90);
+
+  const strengthGap = clubStrength - opponentStrength - 8;
+  const teamLambda = 1.2 + strengthGap / 24;
+  const oppLambda = 1.3 - strengthGap / 26;
+  const teamGoals = clamp(poissonSample(teamLambda), 0, 6);
+  const oppGoals = clamp(poissonSample(oppLambda), 0, 6);
+
+  fixture.played = true;
+  fixture.playerGoals = 0;
+  fixture.playerAssists = 0;
+  fixture.rating = "-";
+  fixture.result = `${teamGoals}-${oppGoals}`;
+  fixture.missedByInjury = true;
+  fixture.events = [
+    { minute: 1, text: `${game.player.name} fica de fora, lesionado.`, type: "ambiente" },
+    { minute: 90, text: `Fim de jogo: ${teamGoals} x ${oppGoals} contra ${fixture.opponent}.`, type: "final" }
+  ];
+
+  game.seasonLog.unshift({
+    competition: fixture.competition,
+    opponent: fixture.opponent,
+    result: fixture.result,
+    goals: 0,
+    assists: 0
+  });
+
+  if (!game.player.competitionStats) game.player.competitionStats = {};
+  game.body.fitness = clamp(game.body.fitness + 4, 0, 100);
+  game.body.freshness = clamp(game.body.freshness + 6, 0, 100);
+
+  game.player.injury.matchesOut -= 1;
+  if (game.player.injury.matchesOut <= 0) {
+    const recoveredSeverity = game.player.injury.severity;
+    game.player.injury = null;
+    game.inbox.unshift(`Recuperado! Voce esta liberado apos a lesao ${recoveredSeverity} e volta a disputar posicao no ${game.player.club}.`);
+  }
 
   return fixture;
 }
@@ -1308,6 +1470,21 @@ function advanceRound() {
     return;
   }
 
+  if (game.player.injury?.matchesOut > 0) {
+    setTransition({
+      title: `${nextFixture.competition}`,
+      subtitle: `${game.player.club} x ${nextFixture.opponent} • voce esta fora, lesionado`,
+      kicker: "Rodada em andamento"
+    });
+    const missedFixture = simulateMissedFixture(game, nextFixture);
+    processNationalTournament(game, missedFixture);
+    game.round += 1;
+    window.setTimeout(() => {
+      setState({ game, transition: null });
+    }, 700);
+    return;
+  }
+
   if (nextFixture.importance >= 85 && !game.decision) {
     game.decision = createDecision(game, nextFixture);
     setState({ game });
@@ -1345,6 +1522,7 @@ function advanceRound() {
   processNationalTournament(game, playedFixture);
   game.decision = null;
   game.round += 1;
+  maybeTriggerInjury(game);
 
   if (game.player.overall >= 76 && !game.milestones.includes("convocado")) {
     game.milestones.push("convocado");
@@ -1433,6 +1611,7 @@ function choosePenaltyOrder(order) {
 
 function trainPlayer() {
   const game = structuredClone(state.game);
+  if (game.player.injury?.matchesOut > 0) return;
   game.player.overall = clamp(game.player.overall + 1, 60, 95);
   game.player.form = clamp(game.player.form + 3, 50, 99);
   game.player.energy = clamp(game.player.energy - 6, 20, 99);
@@ -1478,9 +1657,22 @@ function reactToPost(kind) {
 }
 
 function resetCareer() {
+  if (state.activeSlot) {
+    localStorage.removeItem(slotKey(state.activeSlot));
+    if (localStorage.getItem(ACTIVE_SLOT_KEY) === String(state.activeSlot)) {
+      localStorage.removeItem(ACTIVE_SLOT_KEY);
+    }
+  }
   localStorage.removeItem(STORAGE_KEY);
   state = createInitialState();
   render();
+}
+
+function retireCareer() {
+  const game = structuredClone(state.game);
+  finishSeason(game, true);
+  game.retired = true;
+  setState({ game });
 }
 
 // =====================================================================
@@ -1770,6 +1962,8 @@ function renderOnboarding() {
   const clubOptions = clubs.slice().sort((a, b) => a.name.localeCompare(b.name));
   const countryOptions = ["Todos", ...Array.from(new Set(clubOptions.map((club) => club.country))).sort()];
   const featuredClubs = ["Flamengo", "Palmeiras", "Corinthians", "Sao Paulo", "Real Madrid", "Barcelona", "Liverpool", "Bayern de Munique"];
+  const slots = getSlotSummaries();
+  const showBuilder = state.pendingSlot !== null;
 
   container.innerHTML = `
     <div class="landing-shell">
@@ -1789,35 +1983,31 @@ function renderOnboarding() {
           <div class="landing-headline">Do primeiro treino a <em>gloria.</em></div>
           <p class="landing-description">Crie seu jogador. Escolha uma base. Enfrente decisoes, pressao, rivalidades e propostas em uma carreira que muda a cada temporada.</p>
 
-          <div class="landing-actions">
-            <button id="show-builder" class="landing-primary-btn" type="button">+ Nova carreira</button>
-            <div class="landing-resume">
-              ${logoMarkup("Vasco", "club")}
-              <div>
-                <span class="landing-mini">Continuar como</span>
-                <strong>Matheus Mesquita</strong>
-                <span class="landing-mini">OVR 67</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="landing-stats">
-            <div class="landing-stat">
-              <strong>40+</strong>
-              <span class="landing-mini">clubes base</span>
-            </div>
-            <div class="landing-stat">
-              <strong>8</strong>
-              <span class="landing-mini">ligas em vitrine</span>
-            </div>
-            <div class="landing-stat">
-              <strong>∞</strong>
-              <span class="landing-mini">trajetorias</span>
+          <div class="slot-picker" style="margin-top: 24px;">
+            <span class="section-label">Suas carreiras</span>
+            <div class="slot-grid" style="margin-top: 12px;">
+              ${slots.map((slot) => `
+                <div class="slot-card ${slot.empty ? "empty" : ""}">
+                  ${slot.empty ? `
+                    <span class="mini-label">Slot ${slot.id}</span>
+                    <strong>Vazio</strong>
+                    <button class="secondary" type="button" data-new-slot="${slot.id}">+ Nova carreira</button>
+                  ` : `
+                    <span class="mini-label">Slot ${slot.id}</span>
+                    <strong>${slot.playerName}</strong>
+                    <span class="small-copy">${slot.club} • overall ${slot.overall} • ${slot.season}${slot.retired ? " • aposentado" : ""}</span>
+                    <div class="button-row" style="margin-top: 10px;">
+                      <button type="button" data-continue-slot="${slot.id}">Continuar</button>
+                      <button class="secondary" type="button" data-delete-slot="${slot.id}">Apagar</button>
+                    </div>
+                  `}
+                </div>
+              `).join("")}
             </div>
           </div>
         </div>
 
-        <div id="builder-panel" class="display-panel" style="display:none;">
+        <div id="builder-panel" class="display-panel" style="display:${showBuilder ? "block" : "none"};">
           <span class="section-label">Criar jogador</span>
           <h2 style="margin-top: 10px;">Monte o inicio da sua carreira</h2>
           <p class="small-copy" style="margin-top: 10px;">Idade entre 16 e 18, pe dominante, numero, nacionalidade, posicao, arquetipo, craque-base e clube inicial.</p>
@@ -1851,7 +2041,7 @@ function renderOnboarding() {
       </div>
     </div>
 
-    <div class="app-stage">
+    <div class="app-stage" style="display:${showBuilder ? "block" : "none"};">
       <div class="content-stack">
         <div class="logo-wall">
           <span class="section-label">Escolha seu clube inicial</span>
@@ -1882,6 +2072,20 @@ function renderOnboarding() {
   `;
 
   queueMicrotask(() => {
+    document.querySelectorAll("[data-continue-slot]").forEach((button) => {
+      button.addEventListener("click", () => continueSlot(Number(button.dataset.continueSlot)));
+    });
+    document.querySelectorAll("[data-new-slot]").forEach((button) => {
+      button.addEventListener("click", () => startNewInSlot(Number(button.dataset.newSlot)));
+    });
+    document.querySelectorAll("[data-delete-slot]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (confirm("Apagar esta carreira salva? Essa acao nao pode ser desfeita.")) {
+          deleteSlot(Number(button.dataset.deleteSlot));
+        }
+      });
+    });
+
     const form = document.getElementById("career-form");
     const builderPanel = document.getElementById("builder-panel");
     const clubField = form?.querySelector('select[name="club"]');
@@ -1916,13 +2120,6 @@ function renderOnboarding() {
     document.getElementById("club-random")?.addEventListener("click", () => {
       const randomClub = randomFrom(clubOptions);
       syncActiveClub(randomClub.name);
-    });
-
-    document.getElementById("show-builder")?.addEventListener("click", () => {
-      if (builderPanel) {
-        builderPanel.style.display = "block";
-        builderPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
     });
 
     syncActiveClub(clubField?.value && clubField.value !== "Aleatorio" ? clubField.value : clubOptions[0].name);
@@ -2408,11 +2605,12 @@ function renderCareerTab(game) {
           <span class="section-label">Painel do atleta</span>
         </div>
         <div class="section-actions">
-          <button id="advance-btn" type="button">${game.seasonSummary ? (game.seasonSummary.forcedRetirement ? "Encerrar carreira" : "Iniciar nova temporada") : game.decision?.choice ? "Entrar em campo" : nextFixture ? "Avancar rodada" : "Fechar temporada"}</button>
-          <button id="train-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Treinar</button>
+          <button id="advance-btn" type="button">${game.seasonSummary ? (game.seasonSummary.forcedRetirement ? "Encerrar carreira" : "Iniciar nova temporada") : game.player.injury?.matchesOut > 0 ? "Avancar rodada (lesionado)" : game.decision?.choice ? "Entrar em campo" : nextFixture ? "Avancar rodada" : "Fechar temporada"}</button>
+          <button id="train-btn" class="secondary" type="button" ${game.seasonSummary || game.player.injury?.matchesOut > 0 ? "disabled" : ""}>Treinar</button>
           <button id="rest-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Descansar</button>
         </div>
       </div>
+        ${game.player.injury?.matchesOut > 0 ? `<div style="margin-top: 18px;" class="decision-card"><span class="section-label">Departamento medico</span><h3 style="margin-top: 8px;">Lesao ${game.player.injury.severity}</h3><p class="small-copy" style="margin-top: 8px;">Faltam ${game.player.injury.matchesOut} de ${game.player.injury.totalMatches} jogo(s) para voltar a atuar. Treino bloqueado; avance as rodadas para o tempo passar.</p></div>` : ""}
         ${game.decision ? `<div style="margin-top: 18px;">${renderDecisionMarkup(game.decision)}</div>` : ""}
         ${state.matchFocus ? `<div style="margin-top: 18px;">${renderMatchFocus(state.matchFocus, game, nextFixture)}</div>` : ""}
         ${state.penaltyPrompt ? `<div style="margin-top: 18px;">${renderPenaltyPrompt(state.penaltyPrompt)}</div>` : ""}
@@ -2458,7 +2656,9 @@ function renderCareerTab(game) {
       document.getElementById("advance-btn")?.addEventListener("click", () => {
         if (game.seasonSummary) {
           if (game.seasonSummary.forcedRetirement) {
-            resetCareer();
+            const updatedGame = structuredClone(game);
+            updatedGame.retired = true;
+            setState({ game: updatedGame });
           } else {
             advanceToNextSeason();
           }
@@ -2628,6 +2828,7 @@ function renderBodyTab(game) {
           ${gaugeCard("Frescor", game.body.freshness)}
           ${gaugeCard("Risco de lesao", game.body.injuryRisk, { invert: true })}
         </div>
+        ${game.player.injury?.matchesOut > 0 ? `<p class="small-copy" style="margin-top: 12px; color: var(--danger);">Lesao ${game.player.injury.severity}: ${game.player.injury.matchesOut} jogo(s) restante(s) fora dos gramados.</p>` : ""}
       </div>
       <div class="display-panel">
         <span class="section-label">Longevidade</span>
@@ -2846,6 +3047,111 @@ function renderCareerHistoryTable(game) {
   `;
 }
 
+// =====================================================================
+// TELA DE LEGADO: resumo final quando a carreira e encerrada
+// =====================================================================
+function renderLegacyScreen(game) {
+  const container = document.createElement("section");
+  container.className = "screen";
+
+  const history = game.careerHistory ?? [];
+  const totalGoals = history.reduce((sum, entry) => sum + entry.goals, 0);
+  const totalAssists = history.reduce((sum, entry) => sum + entry.assists, 0);
+  const totalMatches = history.reduce((sum, entry) => sum + entry.matches, 0);
+  const clubsPlayed = Array.from(new Set(history.map((entry) => entry.club)));
+  const peakSeason = history.reduce((best, entry) => (!best || entry.goals > best.goals ? entry : best), null);
+  const allTrophies = Array.from(new Set([
+    ...history.flatMap((entry) => entry.trophies ?? []),
+    ...(game.player.trophies ?? [])
+  ]));
+  const peakOverall = history.reduce((max, entry) => Math.max(max, entry.overall), game.player.overall);
+
+  container.innerHTML = `
+    <div class="landing-shell">
+      <div class="landing-copy">
+        <div class="landing-topbar">
+          <div class="landing-brand">
+            <div class="landing-brand-mark">A</div>
+            <div class="landing-brand-name">Ascensao</div>
+          </div>
+          <div class="landing-mini">Carreira encerrada</div>
+        </div>
+        <div>
+          <div class="landing-tagline">Fim de carreira</div>
+          <div class="landing-headline">${game.player.name}, <em>legado registrado.</em></div>
+          <p class="landing-description">${history.length} temporada(s) disputada(s), passando por ${clubsPlayed.length} clube(s), do overall inicial ate o pico de ${peakOverall}. Aqui esta o resumo do que voce construiu.</p>
+        </div>
+      </div>
+      <div class="landing-right">
+        <div class="landing-right-top">
+          <div></div>
+          <div>Modo carreira • futebol</div>
+        </div>
+        <div class="landing-circle"></div>
+        <div class="jersey-visual">
+          <div class="jersey-shirt"></div>
+          <div class="jersey-number">${game.player.number ?? "10"}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-stage">
+      <div class="content-stack">
+        <div class="display-panel panel-highlight">
+          <span class="section-label">Numeros da carreira</span>
+          <div class="grid four" style="margin-top: 14px;">
+            ${metricCard("Temporadas", history.length)}
+            ${metricCard("Gols", totalGoals)}
+            ${metricCard("Assistencias", totalAssists)}
+            ${metricCard("Jogos", totalMatches)}
+          </div>
+        </div>
+        <div class="fixture-split">
+          <div class="display-panel">
+            <span class="section-label">Clubes que voce defendeu</span>
+            <div class="timeline" style="margin-top: 14px;">
+              ${clubsPlayed.length ? clubsPlayed.map((club) => `<div class="timeline-item">${club}</div>`).join("") : `<div class="timeline-item">Nenhuma temporada completa registrada.</div>`}
+            </div>
+          </div>
+          <div class="display-panel">
+            <span class="section-label">Titulos conquistados</span>
+            <div class="timeline" style="margin-top: 14px;">
+              ${allTrophies.length ? allTrophies.map((trophy) => `<div class="timeline-item">${trophy}</div>`).join("") : `<div class="timeline-item">Nenhum titulo levantado nesta carreira.</div>`}
+            </div>
+          </div>
+        </div>
+        ${peakSeason ? `
+        <div class="display-panel">
+          <span class="section-label">Temporada de destaque</span>
+          <p style="margin-top: 10px;">${peakSeason.year} pelo ${peakSeason.club}: ${peakSeason.goals} gols e ${peakSeason.assists} assistencias em ${peakSeason.matches} jogos.</p>
+        </div>
+        ` : ""}
+        <div class="display-panel section-band">
+          <span class="section-label">Temporada a temporada</span>
+          <div style="margin-top: 14px;">
+            ${renderCareerHistoryTable(game)}
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="legacy-menu-btn" type="button">Ver minhas carreiras</button>
+          <button id="legacy-delete-btn" class="secondary" type="button">Apagar esta carreira</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  queueMicrotask(() => {
+    document.getElementById("legacy-menu-btn")?.addEventListener("click", goToSlotMenu);
+    document.getElementById("legacy-delete-btn")?.addEventListener("click", () => {
+      if (confirm("Apagar esta carreira encerrada? Essa acao nao pode ser desfeita.") && state.activeSlot) {
+        deleteSlot(state.activeSlot);
+      }
+    });
+  });
+
+  return container;
+}
+
 function renderSocialTab(game) {
   const panel = document.createElement("div");
   panel.className = "fixture-split";
@@ -2938,8 +3244,8 @@ function renderDashboard() {
         ${tabs.map(([id, label]) => `<button class="nav-button ${state.tab === id ? "active" : ""}" type="button" data-tab="${id}">${label}</button>`).join("")}
       </div>
       <div class="display-panel sidebar-card">
-        <span class="section-label">Design system</span>
-        <p style="margin-top: 10px;">Ascensao usa contraste de arena, grid tecnico, verde-lima e paineis claros para dar peso de produto ao modo carreira.</p>
+        <button id="switch-career-btn" class="secondary" type="button" style="width: 100%;">Trocar de carreira</button>
+        <button id="retire-btn" class="secondary" type="button" style="width: 100%; margin-top: 8px;">Encerrar carreira</button>
       </div>
     </aside>
 
@@ -2990,6 +3296,16 @@ function renderDashboard() {
     document.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => setState({ tab: button.dataset.tab }));
     });
+    document.getElementById("switch-career-btn")?.addEventListener("click", () => {
+      if (confirm("Voltar para a lista de carreiras? Seu progresso atual continua salvo.")) {
+        goToSlotMenu();
+      }
+    });
+    document.getElementById("retire-btn")?.addEventListener("click", () => {
+      if (confirm("Encerrar essa carreira agora e pendurar as chuteiras? Voce vera um resumo do seu legado.")) {
+        retireCareer();
+      }
+    });
   });
 
   return wrapper;
@@ -3001,6 +3317,8 @@ function render() {
 
   if (!state.game) {
     app.appendChild(renderOnboarding());
+  } else if (state.game.retired) {
+    app.appendChild(renderLegacyScreen(state.game));
   } else {
     app.appendChild(renderDashboard());
   }
