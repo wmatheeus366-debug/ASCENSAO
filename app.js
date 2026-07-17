@@ -146,6 +146,54 @@ const competitionLibrary = [
   }
 ];
 
+const nationalTeamStrength = {
+  "Brasil": 88, "Argentina": 87, "Franca": 86, "Espanha": 85, "Alemanha": 85,
+  "Inglaterra": 84, "Portugal": 84, "Italia": 82, "Holanda": 81, "Belgica": 80,
+  "Uruguai": 79, "Croacia": 79, "Colombia": 77, "Marrocos": 76, "Senegal": 75,
+  "Estados Unidos": 75, "Mexico": 74, "Japao": 74, "Suica": 76, "Dinamarca": 77
+};
+
+const nationalTeamPool = Object.keys(nationalTeamStrength);
+
+function nationalTeamRating(name) {
+  return nationalTeamStrength[name] ?? 72;
+}
+
+function pickNationalOpponents(ownNationality, count, exclude = []) {
+  const pool = nationalTeamPool.filter((name) => name !== ownNationality && !exclude.includes(name));
+  const picks = [];
+  while (picks.length < count && pool.length) {
+    const index = Math.floor(Math.random() * pool.length);
+    picks.push(pool.splice(index, 1)[0]);
+  }
+  return picks;
+}
+
+function fixtureWasWon(fixture) {
+  const score = parseResultScore(fixture.result);
+  if (!score) return false;
+  if (score.teamGoals !== score.oppGoals) return score.teamGoals > score.oppGoals;
+  if (fixture.penalty) return fixture.penalty.teamPens > fixture.penalty.oppPens;
+  return false;
+}
+
+function buildNationalGroupFixtures(nationality, torneioName) {
+  const opponents = pickNationalOpponents(nationality, 3);
+  return opponents.map((opponent, index) => ({
+    ...createFixture({
+      roundLabel: `${torneioName} - Grupo (Jogo ${index + 1})`,
+      competition: torneioName,
+      opponent,
+      importance: 78 + Math.round(nationalTeamRating(opponent) / 10),
+      live: true
+    }),
+    tournament: "national",
+    tournamentName: torneioName,
+    stage: "grupos",
+    isNational: true
+  }));
+}
+
 const clubLogos = {
   "Flamengo": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/flamengo.png",
   "Palmeiras": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/palmeiras.png",
@@ -498,7 +546,7 @@ function startCareer(formData) {
   setState({ game, tab: "carreira" });
 }
 
-function generateSeasonFixtures(club, player) {
+function generateSeasonFixtures(club, player, convoked = false, season = 2026) {
   const list = [];
   const stateCupTeams = clubs.filter((item) => item.state === club.state).slice(0, 8);
   const stateOpponents = stateCupTeams.filter((item) => item.name !== club.name);
@@ -537,8 +585,9 @@ function generateSeasonFixtures(club, player) {
     createFixture({ roundLabel: "Continental", competition: "CONMEBOL Libertadores", opponent: "Adversario continental", importance: 88, live: true })
   );
 
-  if (["Brasil", "Argentina", "Franca"].includes(player.nationality)) {
-    list.push(createFixture({ roundLabel: "Selecao", competition: "Copa do Mundo", opponent: "Selecao rival", importance: 90, live: true }));
+  if (convoked && player.nationality) {
+    const torneioName = season % 4 === 0 ? "Copa do Mundo" : "Torneio Continental";
+    list.push(...buildNationalGroupFixtures(player.nationality, torneioName));
   }
 
   return list;
@@ -674,10 +723,12 @@ function deriveScoreFromEvents(events) {
 }
 
 function simulateFixture(game, fixture, decisionChoice, penaltyOrder = null) {
-  const clubStrength = game.club.difficulty;
+  const clubStrength = fixture.isNational ? nationalTeamRating(game.player.nationality) : game.club.difficulty;
   const playerImpact = Math.round((game.player.overall + game.player.form + game.player.morale) / 3);
   const opponentClub = clubs.find((item) => item.name === fixture.opponent);
-  const opponentStrength = opponentClub?.strength ?? clamp(clubStrength - 4 + Math.floor(Math.random() * 8), 68, 90);
+  const opponentStrength = fixture.isNational
+    ? nationalTeamRating(fixture.opponent)
+    : opponentClub?.strength ?? clamp(clubStrength - 4 + Math.floor(Math.random() * 8), 68, 90);
   const decisionBoost = decisionChoice?.effect?.morale ?? 0;
   const performanceBase = playerImpact + decisionBoost + Math.floor(Math.random() * 18) - Math.floor(opponentStrength / 7);
 
@@ -715,9 +766,11 @@ function simulateFixture(game, fixture, decisionChoice, penaltyOrder = null) {
   game.player.influence = clamp(game.player.influence + (fixture.importance > 85 ? 2 : 1), 0, 100);
   game.player.development.xp += 10 + (fixture.importance >= 85 ? 6 : 0) + (playerGoals * 4) + (playerAssists * 3);
 
-  game.club.boardConfidence = clamp(game.club.boardConfidence + (teamGoals > oppGoals ? 3 : -1), 20, 100);
-  game.club.fanLove = clamp(game.club.fanLove + (playerGoals > 0 ? 4 : 1), 0, 100);
-  game.coach.trust = clamp(game.coach.trust + (rating >= 7.5 ? 4 : -1), 0, 100);
+  if (!fixture.isNational) {
+    game.club.boardConfidence = clamp(game.club.boardConfidence + (teamGoals > oppGoals ? 3 : -1), 20, 100);
+    game.club.fanLove = clamp(game.club.fanLove + (playerGoals > 0 ? 4 : 1), 0, 100);
+    game.coach.trust = clamp(game.coach.trust + (rating >= 7.5 ? 4 : -1), 0, 100);
+  }
   game.body.fitness = clamp(game.body.fitness - 3 + Math.floor(Math.random() * 4), 40, 100);
   game.body.freshness = clamp(game.body.freshness - 5 + Math.floor(Math.random() * 4), 35, 100);
   game.body.injuryRisk = clamp(game.body.injuryRisk + (game.player.energy < 50 ? 4 : 1), 0, 100);
@@ -883,7 +936,7 @@ function advanceToNextSeason() {
   game.body.injuryRisk = clamp(Math.round(game.body.injuryRisk * 0.7), 6, 35);
   game.agent.offers = [];
   game.decision = null;
-  game.fixtures = generateSeasonFixtures(game.club, game.player);
+  game.fixtures = generateSeasonFixtures(game.club, game.player, game.milestones.includes("convocado"), game.season);
   game.seasonLog = [];
   game.seasonSummary = null;
   game.inbox.unshift(`Nova temporada iniciada: ${game.season}. Novo calendario liberado para ${game.player.club}.`);
@@ -896,6 +949,15 @@ function advanceToNextSeason() {
 
   if (game.contract.yearsLeft === 0) {
     game.inbox.unshift("Seu contrato entrou no ultimo limite. Renovacao ou novo clube viram prioridade imediata.");
+  }
+
+  if (game.milestones.includes("convocado")) {
+    const torneioName = game.season % 4 === 0 ? "Copa do Mundo" : "Torneio Continental";
+    const groupOpponents = game.fixtures.filter((item) => item.tournament === "national" && item.stage === "grupos").map((item) => item.opponent);
+    const prep = torneioName === "Copa do Mundo" ? "na" : "no";
+    if (groupOpponents.length) {
+      game.inbox.unshift(`Convocacao confirmada para ${game.season}: ${game.player.nationality} cai em grupo com ${groupOpponents.join(", ")} ${prep} ${torneioName}.`);
+    }
   }
 
   setState({
@@ -964,6 +1026,100 @@ function rejectTransferOffer(offerId) {
   setState({ game });
 }
 
+function processNationalTournament(game, playedFixture) {
+  if (!playedFixture?.tournament || playedFixture.tournament !== "national") return;
+
+  const torneioName = playedFixture.tournamentName;
+  const facedOpponents = game.fixtures
+    .filter((item) => item.tournament === "national" && item.tournamentName === torneioName)
+    .map((item) => item.opponent);
+
+  if (playedFixture.stage === "grupos") {
+    const groupGames = game.fixtures.filter((item) => item.tournament === "national" && item.stage === "grupos" && item.tournamentName === torneioName);
+    if (!groupGames.every((item) => item.played)) return;
+
+    const points = groupGames.reduce((total, item) => {
+      const score = parseResultScore(item.result);
+      if (!score) return total;
+      if (score.teamGoals > score.oppGoals) return total + 3;
+      if (score.teamGoals === score.oppGoals) return total + 1;
+      return total;
+    }, 0);
+
+    const prep = torneioName === "Copa do Mundo" ? "da" : "do";
+    const prepContracted = torneioName === "Copa do Mundo" ? "na" : "no";
+
+    if (points >= 4) {
+      const [nextOpponent] = pickNationalOpponents(game.player.nationality, 1, facedOpponents);
+      game.fixtures.push({
+        ...createFixture({
+          roundLabel: `${torneioName} - Quartas de final`,
+          competition: torneioName,
+          opponent: nextOpponent ?? "Adversario surpresa",
+          importance: 90,
+          live: true
+        }),
+        tournament: "national",
+        tournamentName: torneioName,
+        stage: "quartas",
+        isNational: true
+      });
+      game.inbox.unshift(`${game.player.nationality} avancou em ${points} pontos na fase de grupos ${prep} ${torneioName} e garantiu vaga nas quartas de final.`);
+    } else {
+      game.inbox.unshift(`Eliminacao: ${game.player.nationality} somou ${points} pontos e caiu na fase de grupos ${prep} ${torneioName}.`);
+      game.socialFeed.unshift({
+        id: crypto.randomUUID(),
+        author: "Central Ascensao",
+        text: `Fase de grupos decepcionante: ${game.player.nationality} esta fora ${prep === "da" ? "da" : "do"} ${torneioName} ainda na primeira fase.`,
+        impact: "moral"
+      });
+    }
+    return;
+  }
+
+  const prep = torneioName === "Copa do Mundo" ? "da" : "do";
+  const knockoutOrder = { quartas: "semifinal", semifinal: "final" };
+  const won = fixtureWasWon(playedFixture);
+
+  if (playedFixture.stage === "final") {
+    if (won) {
+      game.player.trophies = Array.from(new Set([...(game.player.trophies ?? []), `${torneioName} ${game.season}`]));
+      game.player.seasonAwards.push(`Campeao ${prep} ${torneioName} por ${game.player.nationality}`);
+      game.player.reputation = clamp(game.player.reputation + 12, 0, 100);
+      game.player.happiness = clamp(game.player.happiness + 10, 0, 100);
+      game.inbox.unshift(`CAMPEAO! ${game.player.nationality} conquistou o titulo ${prep} ${torneioName} com voce em campo na final.`);
+    } else {
+      game.player.trophies = Array.from(new Set([...(game.player.trophies ?? []), `Vice-campeao ${torneioName} ${game.season}`]));
+      game.player.reputation = clamp(game.player.reputation + 6, 0, 100);
+      game.inbox.unshift(`Final perdida: ${game.player.nationality} terminou ${prep === "da" ? "a" : "o"} ${torneioName} como vice-campeao.`);
+    }
+    return;
+  }
+
+  if (!won) {
+    const stageLabel = playedFixture.stage === "quartas" ? "quartas de final" : "semifinal";
+    game.inbox.unshift(`Eliminacao: ${game.player.nationality} caiu na ${stageLabel} ${prep} ${torneioName}.`);
+    return;
+  }
+
+  const nextStage = knockoutOrder[playedFixture.stage];
+  const [nextOpponent] = pickNationalOpponents(game.player.nationality, 1, facedOpponents);
+  game.fixtures.push({
+    ...createFixture({
+      roundLabel: `${torneioName} - ${nextStage === "semifinal" ? "Semifinal" : "Final"}`,
+      competition: torneioName,
+      opponent: nextOpponent ?? "Adversario surpresa",
+      importance: nextStage === "final" ? 96 : 92,
+      live: true
+    }),
+    tournament: "national",
+    tournamentName: torneioName,
+    stage: nextStage,
+    isNational: true
+  });
+  game.inbox.unshift(`Classificado! ${game.player.nationality} avancou para a ${nextStage === "semifinal" ? "semifinal" : "final"} ${prep} ${torneioName}.`);
+}
+
 function advanceRound() {
   const game = structuredClone(state.game);
   const nextFixture = game.fixtures.find((item) => !item.played);
@@ -1008,6 +1164,7 @@ function advanceRound() {
     });
 
   const playedFixture = simulateFixture(game, nextFixture, game.decision?.choice, state.penaltyPrompt?.order ?? null);
+  processNationalTournament(game, playedFixture);
   game.decision = null;
   game.round += 1;
 
@@ -1599,6 +1756,15 @@ function renderOnboarding() {
 }
 
 function renderDecisionMarkup(decision) {
+    if (decision.choice) {
+      return `
+        <div class="decision-card">
+          <span class="section-label">Decisao registrada</span>
+          <h3 style="margin-top: 8px;">${decision.title}</h3>
+          <p class="small-copy" style="margin-top: 8px;">Voce escolheu: <strong>${decision.choice.label}</strong>. Clique em "Avancar rodada" de novo para entrar na partida.</p>
+        </div>
+      `;
+    }
     return `
       <div class="decision-card">
         <span class="section-label">Pop-up de decisao</span>
@@ -1804,13 +1970,14 @@ function renderCompetitionSpotlight(nextFixture, game) {
     `;
   }
 
+  const homeSide = nextFixture.isNational ? game.player.nationality : game.player.club;
   return `
     <div class="competition-spotlight-card">
       <span class="section-label">Jogo em destaque</span>
       <h3>${nextFixture.competition}</h3>
-      <p class="small-copy">${game.player.club} enfrenta ${nextFixture.opponent} em ${nextFixture.roundLabel}. Um confronto com peso ${nextFixture.importance} para sua ascensao.</p>
+      <p class="small-copy">${homeSide} enfrenta ${nextFixture.opponent} em ${nextFixture.roundLabel}. Um confronto com peso ${nextFixture.importance} para sua ascensao.</p>
       <div class="competition-spotlight-meta">
-        <span class="pill">${game.player.club}</span>
+        <span class="pill">${homeSide}</span>
         <span class="pill">${nextFixture.opponent}</span>
         <span class="pill">Importancia ${nextFixture.importance}</span>
       </div>
@@ -1933,7 +2100,45 @@ function renderScorersTable(game, competitionName) {
 }
 
 function buildKnockoutBracket(game, competitionName) {
-  const isCup = ["Copa do Brasil", "CONMEBOL Libertadores", "CONMEBOL Sudamericana", "Copa do Mundo"].includes(competitionName);
+  const nationalFixtures = game.fixtures.filter((item) => item.tournament === "national" && item.tournamentName === competitionName);
+
+  if (nationalFixtures.length) {
+    const groupGames = nationalFixtures.filter((item) => item.stage === "grupos");
+    const knockoutStages = ["quartas", "semifinal", "final"];
+    const stageLabels = { quartas: "Quartas", semifinal: "Semifinal", final: "Final" };
+    const rounds = [];
+
+    if (groupGames.length) {
+      rounds.push({
+        stage: "Fase de grupos",
+        matches: groupGames.map((item) => ({
+          home: game.player.nationality,
+          away: item.opponent,
+          score: item.played ? item.result : "a jogar",
+          highlight: true
+        }))
+      });
+    }
+
+    knockoutStages.forEach((stageKey) => {
+      const stageFixture = nationalFixtures.find((item) => item.stage === stageKey);
+      if (!stageFixture) return;
+      rounds.push({
+        stage: stageLabels[stageKey],
+        matches: [{
+          home: game.player.nationality,
+          away: stageFixture.opponent,
+          score: stageFixture.played ? stageFixture.result : "a jogar",
+          highlight: true,
+          penalty: stageFixture.penalty ? `${stageFixture.penalty.teamPens}-${stageFixture.penalty.oppPens} pen` : null
+        }]
+      });
+    });
+
+    return rounds;
+  }
+
+  const isCup = ["Copa do Brasil", "CONMEBOL Libertadores", "CONMEBOL Sudamericana"].includes(competitionName);
   if (!isCup) return null;
 
   const fixture = game.fixtures.find((item) => item.competition === competitionName);
@@ -2056,7 +2261,7 @@ function renderCareerTab(game) {
           <p class="small-copy">Treine, descanse, avance as rodadas e encare os momentos decisivos com mais estilo e leitura clara.</p>
         </div>
         <div class="section-actions">
-          <button id="advance-btn" type="button">${game.seasonSummary ? (game.seasonSummary.forcedRetirement ? "Encerrar carreira" : "Iniciar nova temporada") : nextFixture ? "Avancar rodada" : "Fechar temporada"}</button>
+          <button id="advance-btn" type="button">${game.seasonSummary ? (game.seasonSummary.forcedRetirement ? "Encerrar carreira" : "Iniciar nova temporada") : game.decision?.choice ? "Entrar em campo" : nextFixture ? "Avancar rodada" : "Fechar temporada"}</button>
           <button id="train-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Treinar arquetipo</button>
           <button id="rest-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Descansar</button>
         </div>
