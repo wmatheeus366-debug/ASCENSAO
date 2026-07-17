@@ -501,6 +501,32 @@ h3 {
   font-size: 1.75rem;
 }
 
+.gauge-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.gauge-fill.gauge-good {
+  background: linear-gradient(90deg, var(--mint-2), var(--mint));
+}
+
+.gauge-fill.gauge-warn {
+  background: linear-gradient(90deg, var(--gold-2), var(--gold));
+}
+
+.gauge-fill.gauge-danger {
+  background: linear-gradient(90deg, var(--danger), #ff5a72);
+}
+
 .panel-highlight {
   background:
     linear-gradient(135deg, rgba(217, 255, 53, 0.08), rgba(255, 255, 255, 0.02)),

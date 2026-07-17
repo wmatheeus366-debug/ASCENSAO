@@ -1,5 +1,8 @@
 const STORAGE_KEY = "ascensao-save-v3";
 
+// =====================================================================
+// DADOS DO JOGO: lendas, arquetipos e trilhas de desenvolvimento
+// =====================================================================
 const legends = [
   { name: "Pele", specialty: "Finalizacao", bonus: { finishing: 6, flair: 4, vision: 2 } },
   { name: "Maradona", specialty: "Drible", bonus: { dribbling: 6, flair: 5, composure: 2 } },
@@ -35,6 +38,9 @@ const developmentTracks = {
   "Goleiro Moderno": ["Reflexo", "Jogo com os pes", "Comando de area"]
 };
 
+// =====================================================================
+// COMPETICOES: enciclopedia de torneios (ligas, copas, selecoes)
+// =====================================================================
 const competitionLibrary = [
   {
     id: "brasileirao-a",
@@ -146,6 +152,10 @@ const competitionLibrary = [
   }
 ];
 
+// =====================================================================
+// SELECAO NACIONAL: forca das selecoes, sorteio de grupo e progressao
+// de torneio (fase de grupos -> quartas -> semifinal -> final)
+// =====================================================================
 const nationalTeamStrength = {
   "Brasil": 88, "Argentina": 87, "Franca": 86, "Espanha": 85, "Alemanha": 85,
   "Inglaterra": 84, "Portugal": 84, "Italia": 82, "Holanda": 81, "Belgica": 80,
@@ -194,6 +204,9 @@ function buildNationalGroupFixtures(nationality, torneioName) {
   }));
 }
 
+// =====================================================================
+// LOGOS: imagens de clubes e competicoes (com fallback de iniciais)
+// =====================================================================
 const clubLogos = {
   "Flamengo": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/flamengo.png",
   "Palmeiras": "https://sportlogos.github.io/football.db.logos/south-america/br-brazil/palmeiras.png",
@@ -257,6 +270,27 @@ const competitionLogos = {
   "MLS": "https://images.seeklogo.com/logo-png/28/1/major-league-soccer-logo-png_seeklogo-283502.png"
 };
 
+// =====================================================================
+// ELENCO: pools de nomes para gerar companheiros de time
+// (ficam ANTES do array "clubs" de proposito: o array chama
+// generateSquad() na hora que carrega, entao esses nomes precisam
+// existir primeiro para evitar erro de referencia)
+// =====================================================================
+const teammateFirstNames = [
+  "Carlos", "Rafael", "Joao", "Marcos", "Lucas", "Pedro", "Gabriel", "Mateus", "Thiago", "Bruno",
+  "Andre", "Alan", "Diego", "Matheus", "Henrique", "Vitor", "Guilherme", "Caio", "Yuri", "Igor",
+  "Felipe", "Renato", "Daniel", "Leonardo", "Rodrigo", "Fabio", "Wesley", "Erick", "Otavio", "Samuel"
+];
+
+const teammateLastNames = [
+  "Almeida", "Ferreira", "Souza", "Costa", "Pereira", "Rocha", "Lima", "Barbosa", "Nascimento", "Araujo",
+  "Ribeiro", "Carvalho", "Gomes", "Martins", "Teixeira", "Moura", "Cardoso", "Vieira", "Dias", "Correia",
+  "Duarte", "Freitas", "Monteiro", "Batista", "Pinto", "Machado", "Nunes", "Castro", "Fonseca", "Azevedo"
+];
+
+// =====================================================================
+// BANCO DE CLUBES E LIGAS: Brasil, Europa, America do Sul, MLS, Liga MX
+// =====================================================================
 const clubs = [
   ["Flamengo", "Brasil", "Brasileirao Serie A", 84, "Rio de Janeiro", ["Vasco", "Fluminense", "Botafogo"]],
   ["Palmeiras", "Brasil", "Brasileirao Serie A", 85, "Sao Paulo", ["Corinthians", "Sao Paulo", "Santos"]],
@@ -342,6 +376,9 @@ const clubs = [
   squad: generateSquad(name)
 }));
 
+// =====================================================================
+// FEED SOCIAL: templates de noticias e posts
+// =====================================================================
 const newsTemplates = [
   "Torcida do {club} pede mais minutos para {player}.",
   "Comentaristas elogiam a evolucao de {player} no {club}.",
@@ -350,19 +387,62 @@ const newsTemplates = [
   "Jornal local diz que {player} pode assumir bolas paradas em breve."
 ];
 
-function generateSquad(clubName) {
-  const commonNames = [
-    "Carlos", "Rafael", "Joao", "Marcos", "Lucas", "Pedro", "Gabriel", "Mateus", "Thiago", "Bruno",
-    "Andre", "Alan", "Diego", "Matheus", "Henrique", "Vitor", "Guilherme", "Caio", "Yuri", "Igor"
-  ];
+const teammateNewsTemplates = [
+  "Nos treinos, {player} e {teammate} formam a dupla mais comentada do {club} no momento.",
+  "{teammate}, capitao do {club}, elogia publicamente a entrega de {player} nos ultimos jogos.",
+  "Bastidores: {teammate} tem puxado {player} para o protagonismo dentro de campo.",
+  "Torcida do {club} ja aposta na parceria entre {player} e {teammate} para a sequencia da temporada."
+];
 
-  return Array.from({ length: 22 }, (_, index) => ({
-    name: `${commonNames[index % commonNames.length]} ${clubName.split(" ")[0]}`,
-    overall: 64 + Math.floor(Math.random() * 18),
-    position: ["GOL", "LD", "ZAG", "ZAG", "LE", "VOL", "MC", "MEI", "PD", "ATA", "PE"][index % 11]
-  }));
+
+// =====================================================================
+// GERACAO DE ELENCO: nomes, overall, astro do time e capitao
+// =====================================================================
+function generateSquad(clubName) {
+  const positions = ["GOL", "LD", "ZAG", "ZAG", "LE", "VOL", "MC", "MEI", "PD", "ATA", "PE"];
+  const usedNames = new Set();
+
+  const squad = Array.from({ length: 22 }, (_, index) => {
+    let name;
+    do {
+      name = `${randomFrom(teammateFirstNames)} ${randomFrom(teammateLastNames)}`;
+    } while (usedNames.has(name) && usedNames.size < teammateFirstNames.length * teammateLastNames.length);
+    usedNames.add(name);
+
+    return {
+      name,
+      overall: 64 + Math.floor(Math.random() * 18),
+      position: positions[index % positions.length],
+      age: 18 + Math.floor(Math.random() * 15),
+      number: index + 1,
+      isStar: false,
+      isCaptain: false
+    };
+  });
+
+  const outfielders = squad.filter((athlete) => athlete.position !== "GOL");
+  const star = outfielders.reduce((best, athlete) => (athlete.overall > best.overall ? athlete : best), outfielders[0]);
+  if (star) star.isStar = true;
+
+  const captainCandidates = outfielders.filter((athlete) => athlete !== star);
+  const captain = captainCandidates.length ? randomFrom(captainCandidates) : star;
+  if (captain) captain.isCaptain = true;
+
+  return squad;
 }
 
+function getStarTeammate(club) {
+  return club?.squad?.find((athlete) => athlete.isStar) ?? null;
+}
+
+function getRandomTeammate(club, excludeStar = false) {
+  const pool = (club?.squad ?? []).filter((athlete) => athlete.position !== "GOL" && (!excludeStar || !athlete.isStar));
+  return pool.length ? randomFrom(pool) : null;
+}
+
+// =====================================================================
+// ESTADO DA APLICACAO: criacao inicial, save/load e setters de estado
+// =====================================================================
 function createInitialState() {
   return {
     tab: "carreira",
@@ -423,6 +503,9 @@ function createPlaybackState(events = []) {
   };
 }
 
+// =====================================================================
+// UTILITARIOS GERAIS: sorteio, clamp, iniciais, logos
+// =====================================================================
 function randomFrom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
@@ -456,6 +539,9 @@ function logoMarkup(name, type = "club", large = false) {
   `;
 }
 
+// =====================================================================
+// INICIO DE CARREIRA: cria jogador, clube e o objeto "game" completo
+// =====================================================================
 function startCareer(formData) {
   const legend = legends.find((item) => item.name === formData.legend);
   const club = formData.club === "Aleatorio"
@@ -488,6 +574,7 @@ function startCareer(formData) {
     seasonAwards: [],
     isCaptain: false,
     setPieces: [],
+    competitionStats: {},
     development: {
       xp: 0,
       level: 1,
@@ -537,6 +624,7 @@ function startCareer(formData) {
       fanLove: 50
     },
     milestones: [],
+    careerHistory: [],
     fixtures: generateSeasonFixtures(club, player),
     decision: null,
     seasonLog: [],
@@ -546,6 +634,9 @@ function startCareer(formData) {
   setState({ game, tab: "carreira" });
 }
 
+// =====================================================================
+// CALENDARIO DA TEMPORADA: fixtures de estadual, liga, copas e selecao
+// =====================================================================
 function generateSeasonFixtures(club, player, convoked = false, season = 2026) {
   const list = [];
   const stateCupTeams = clubs.filter((item) => item.state === club.state).slice(0, 8);
@@ -643,15 +734,24 @@ function getImportance(clubName, opponentName) {
   return clamp(50 + Math.round((opponent?.strength ?? 72) / 4), 52, 86);
 }
 
+// =====================================================================
+// NARRATIVA: feed social e decisoes pre-jogo
+// =====================================================================
 function buildSocialFeed(player, club) {
-  return Array.from({ length: 5 }, () => ({
-    id: crypto.randomUUID(),
-    author: randomFrom(["Jornal da Bola", "Torcida 24h", "Mesa Tatica", "Influencer da Resenha", "Canal Arquibancada"]),
-    text: randomFrom(newsTemplates)
-      .replaceAll("{club}", club.name)
-      .replaceAll("{player}", player.name),
-    impact: randomFrom(["popularidade", "pressao", "moral"])
-  }));
+  return Array.from({ length: 5 }, () => {
+    const useTeammate = Math.random() < 0.4;
+    const teammate = useTeammate ? (getStarTeammate(club) ?? getRandomTeammate(club)) : null;
+    const template = teammate ? randomFrom(teammateNewsTemplates) : randomFrom(newsTemplates);
+    return {
+      id: crypto.randomUUID(),
+      author: randomFrom(["Jornal da Bola", "Torcida 24h", "Mesa Tatica", "Influencer da Resenha", "Canal Arquibancada"]),
+      text: template
+        .replaceAll("{club}", club.name)
+        .replaceAll("{player}", player.name)
+        .replaceAll("{teammate}", teammate?.name ?? ""),
+      impact: randomFrom(["popularidade", "pressao", "moral"])
+    };
+  });
 }
 
 function createDecision(game, fixture) {
@@ -683,18 +783,30 @@ function chooseDecision(index) {
   setState({ game });
 }
 
-function buildLiveEvents(playerName, opponent, teamGoals, oppGoals, goals, assists, penShootout, decisiveMoment) {
+// =====================================================================
+// SIMULACAO DE PARTIDA: eventos, placar e efeitos no jogador/clube
+// =====================================================================
+function buildLiveEvents(playerName, opponent, teamGoals, oppGoals, goals, assists, penShootout, decisiveMoment, club = null) {
+  const buildupPartner = getRandomTeammate(club);
+  const assistTarget = getRandomTeammate(club);
+  const buildupText = buildupPartner
+    ? `${playerName} troca passes com ${buildupPartner.name} e acelera o ataque.`
+    : `${playerName} aparece entrelinhas e acelera o ataque.`;
+
   const events = [
     { minute: 8 + Math.floor(Math.random() * 8), text: "A torcida transforma o clima do estadio.", type: "ambiente" },
     { minute: 16 + Math.floor(Math.random() * 10), text: "Jogo muito fisico no meio-campo.", type: "ritmo" },
-    { minute: 28 + Math.floor(Math.random() * 10), text: `${playerName} aparece entrelinhas e acelera o ataque.`, type: "jogada" }
+    { minute: 28 + Math.floor(Math.random() * 10), text: buildupText, type: "jogada" }
   ];
 
   if (goals > 0) {
     events.push({ minute: 38 + Math.floor(Math.random() * 18), text: `Gol de ${playerName}. Explosao total nas arquibancadas.`, type: "gol" });
   }
   if (assists > 0) {
-    events.push({ minute: 54 + Math.floor(Math.random() * 18), text: `Assistencia de ${playerName} quebrando a linha rival.`, type: "assistencia" });
+    const assistText = assistTarget
+      ? `Assistencia de ${playerName} para ${assistTarget.name}, que nao desperdica.`
+      : `Assistencia de ${playerName} quebrando a linha rival.`;
+    events.push({ minute: 54 + Math.floor(Math.random() * 18), text: assistText, type: "assistencia" });
   }
   if (decisiveMoment) {
     events.push({ minute: 82 + Math.floor(Math.random() * 8), text: decisiveMoment, type: "decisivo" });
@@ -753,11 +865,20 @@ function simulateFixture(game, fixture, decisionChoice, penaltyOrder = null) {
     ? `${teamGoals}-${oppGoals} (${penaltyResolved.teamPens}-${penaltyResolved.oppPens} pen)`
     : `${teamGoals}-${oppGoals}`;
   fixture.penalty = penaltyResolved;
-  fixture.events = buildLiveEvents(game.player.name, fixture.opponent, teamGoals, oppGoals, playerGoals, playerAssists, penShootout, decisiveMoment);
+  fixture.events = buildLiveEvents(game.player.name, fixture.opponent, teamGoals, oppGoals, playerGoals, playerAssists, penShootout, decisiveMoment, fixture.isNational ? null : game.club);
 
   game.player.goals += playerGoals;
   game.player.assists += playerAssists;
   game.player.matches += 1;
+
+  if (!game.player.competitionStats) game.player.competitionStats = {};
+  if (!game.player.competitionStats[fixture.competition]) {
+    game.player.competitionStats[fixture.competition] = { goals: 0, assists: 0, matches: 0 };
+  }
+  game.player.competitionStats[fixture.competition].goals += playerGoals;
+  game.player.competitionStats[fixture.competition].assists += playerAssists;
+  game.player.competitionStats[fixture.competition].matches += 1;
+
   game.player.form = clamp(game.player.form + (rating >= 8 ? 4 : rating >= 7 ? 2 : -2), 50, 99);
   game.player.morale = clamp(game.player.morale + (teamGoals > oppGoals ? 3 : oppGoals > teamGoals ? -4 : 0) + decisionBoost, 35, 99);
   game.player.energy = clamp(game.player.energy - 7 + Math.floor(Math.random() * 5), 32, 99);
@@ -874,6 +995,10 @@ function resolvePenaltyShootout(game, penaltyOrder) {
   return { order, playerScored, teamPens, oppPens, text };
 }
 
+// =====================================================================
+// VIRADA DE TEMPORADA E CARREIRA: fechamento de ano, renovacao,
+// transferencias e treino
+// =====================================================================
 function finishSeason(game, forcedRetirement = false) {
   const awardPool = [];
   const seasonalTrophies = [];
@@ -911,6 +1036,20 @@ function finishSeason(game, forcedRetirement = false) {
   };
 
   game.player.startingOverall = game.player.overall;
+
+  if (!game.careerHistory) game.careerHistory = [];
+  game.careerHistory.push({
+    year: game.season,
+    club: game.player.club,
+    competition: game.club.competition,
+    goals: game.player.goals,
+    assists: game.player.assists,
+    matches: game.player.matches,
+    overall: game.player.overall,
+    trophies: [...seasonalTrophies],
+    awards: [...awardPool],
+    forcedRetirement
+  });
 }
 
 function advanceToNextSeason() {
@@ -1026,6 +1165,10 @@ function rejectTransferOffer(offerId) {
   setState({ game });
 }
 
+// =====================================================================
+// PROGRESSAO DO TORNEIO DE SELECOES: avanco/eliminacao de fase de
+// grupos e mata-mata (chamado depois de cada jogo de selecao)
+// =====================================================================
 function processNationalTournament(game, playedFixture) {
   if (!playedFixture?.tournament || playedFixture.tournament !== "national") return;
 
@@ -1120,6 +1263,10 @@ function processNationalTournament(game, playedFixture) {
   game.inbox.unshift(`Classificado! ${game.player.nationality} avancou para a ${nextStage === "semifinal" ? "semifinal" : "final"} ${prep} ${torneioName}.`);
 }
 
+// =====================================================================
+// LOOP PRINCIPAL: avancar rodada e demais acoes do jogador
+// (treinar, descansar, pedir funcoes, reagir a posts)
+// =====================================================================
 function advanceRound() {
   const game = structuredClone(state.game);
   const nextFixture = game.fixtures.find((item) => !item.played);
@@ -1305,6 +1452,10 @@ function resetCareer() {
   render();
 }
 
+// =====================================================================
+// COMPONENTES DE UI: campos de formulario, cards de estatistica e
+// medidores (gauges)
+// =====================================================================
 function field(label, name, type, value) {
   return `<label>${label}<input required name="${name}" type="${type}" value="${value}"></label>`;
 }
@@ -1323,6 +1474,29 @@ function metricCard(label, value, copy = "") {
   `;
 }
 
+function gaugeCard(label, value, options = {}) {
+  const max = options.max ?? 100;
+  const invert = options.invert ?? false;
+  const copy = options.copy ?? "";
+  const pct = clamp(Math.round((value / max) * 100), 0, 100);
+  const level = invert ? 100 - pct : pct;
+  const tone = level >= 67 ? "good" : level >= 34 ? "warn" : "danger";
+
+  return `
+    <div class="stat-card gauge-card">
+      <span class="mini-label">${label}</span>
+      <strong>${value}</strong>
+      <div class="gauge-track">
+        <div class="gauge-fill gauge-${tone}" style="width: ${pct}%;"></div>
+      </div>
+      ${copy ? `<span class="small-copy">${copy}</span>` : ""}
+    </div>
+  `;
+}
+
+// =====================================================================
+// COMPONENTES DE RENDERIZACAO: partida ao vivo, penaltis e "jogo grande"
+// =====================================================================
 function renderLiveHud(fixture, playerName, clubName) {
   if (!fixture || !fixture.played || !fixture.live) return "";
 
@@ -1532,31 +1706,6 @@ function renderClubPickerCard(club, isActive = false) {
   `;
 }
 
-function fixtureMarkup(fixture, showTimeline = false) {
-  return `
-    <div class="match-card ${fixture.live ? "live" : ""}">
-      <div class="header-row">
-        <div>
-          <span class="section-label">${fixture.roundLabel}</span>
-          <h3>${fixture.competition}</h3>
-        </div>
-        <span class="pill">Importancia ${fixture.importance}</span>
-      </div>
-      <div class="score-line" style="margin-top: 16px;">
-        <div class="identity-strip">
-          ${logoMarkup(fixture.opponent, "club")}
-          <div class="identity-copy">
-            <strong>${fixture.opponent}</strong>
-            <span class="small-copy">${fixture.played ? fixture.result : "Partida programada"}</span>
-          </div>
-        </div>
-        <div class="scoreline">${fixture.played ? fixture.result : "VS"}</div>
-      </div>
-      ${fixture.played ? `<p class="small-copy" style="margin-top: 12px;">${fixture.playerGoals} gol(s) • ${fixture.playerAssists} assistencia(s) • nota ${fixture.rating}</p>` : `<p class="small-copy" style="margin-top: 12px;">Acompanhamento ${fixture.live ? "em tempo real" : "simulado"} disponivel quando a rodada avancar.</p>`}
-      ${showTimeline && fixture.events?.length ? `<div class="timeline" style="margin-top: 14px;">${fixture.events.map((event) => `<div class="timeline-item"><strong>${event.minute}'</strong> ${event.text}</div>`).join("")}</div>` : ""}
-    </div>
-  `;
-}
 
 function renderSourcePanel() {
   const panel = document.createElement("div");
@@ -1580,6 +1729,9 @@ function renderSourcePanel() {
   return panel;
 }
 
+// =====================================================================
+// TELA DE ONBOARDING: criacao de personagem e escolha de clube
+// =====================================================================
 function renderOnboarding() {
   const container = document.createElement("section");
   container.className = "screen";
@@ -1755,6 +1907,9 @@ function renderOnboarding() {
   return container;
 }
 
+// =====================================================================
+// RESUMO DE TEMPORADA E OBJETIVOS: fechamento de ano e metas do atleta
+// =====================================================================
 function renderDecisionMarkup(decision) {
     if (decision.choice) {
       return `
@@ -1878,7 +2033,6 @@ function renderObjectiveCard(objective) {
       <div class="objective-track">
         <div class="objective-fill" style="width:${Math.round(ratio * 100)}%"></div>
       </div>
-      <p class="small-copy">${objective.copy}</p>
     </div>
   `;
 }
@@ -1959,32 +2113,9 @@ function renderFixtureDetailCard(game, fixture) {
   `;
 }
 
-function renderCompetitionSpotlight(nextFixture, game) {
-  if (!nextFixture) {
-    return `
-      <div class="competition-spotlight-card">
-        <span class="section-label">Temporada encerrada</span>
-        <h3>Fechamento do ciclo atual</h3>
-        <p class="small-copy">Agora o foco vai para premios, renovacao e a montagem da proxima narrativa.</p>
-      </div>
-    `;
-  }
-
-  const homeSide = nextFixture.isNational ? game.player.nationality : game.player.club;
-  return `
-    <div class="competition-spotlight-card">
-      <span class="section-label">Jogo em destaque</span>
-      <h3>${nextFixture.competition}</h3>
-      <p class="small-copy">${homeSide} enfrenta ${nextFixture.opponent} em ${nextFixture.roundLabel}. Um confronto com peso ${nextFixture.importance} para sua ascensao.</p>
-      <div class="competition-spotlight-meta">
-        <span class="pill">${homeSide}</span>
-        <span class="pill">${nextFixture.opponent}</span>
-        <span class="pill">Importancia ${nextFixture.importance}</span>
-      </div>
-    </div>
-  `;
-}
-
+// =====================================================================
+// CLASSIFICACOES E CHAVEAMENTO: tabela de liga, artilharia e mata-mata
+// =====================================================================
 function parseResultScore(result) {
   if (!result) return null;
   const match = result.match(/(\d+)-(\d+)/);
@@ -2203,11 +2334,15 @@ function renderKnockoutBracket(game, competitionName) {
   `;
 }
 
+// =====================================================================
+// ABAS DA CARREIRA: as telas principais (carreira, contrato,
+// empresario, tecnico, corpo, clube, competicoes, rede social)
+// =====================================================================
 function renderCareerTab(game) {
   const panel = document.createElement("div");
   panel.className = "content-stack";
   const nextFixture = game.fixtures.find((item) => !item.played);
-  const recent = game.fixtures.filter((item) => item.played).slice(-4).reverse();
+  const recent = game.fixtures.filter((item) => item.played).slice(-3).reverse();
   const latestLive = game.fixtures.filter((item) => item.played && item.live).slice(-1)[0];
   const objectives = buildCareerObjectives(game, nextFixture);
   const selectedFixture = game.fixtures.find((item) => item.id === state.selectedFixtureId) ?? nextFixture ?? game.fixtures[0];
@@ -2218,36 +2353,19 @@ function renderCareerTab(game) {
         <div class="player-stage-copy">
           <div class="stage-kicker">Minha carreira • ascensao</div>
           <div class="stage-name">${game.player.name}</div>
-          <div class="stage-subline">Da promessa ao protagonista. Sua fase atual mistura desempenho, moral, energia e o peso das escolhas dentro e fora de campo.</div>
           <div class="stage-chip-row">
             <span class="stage-chip">Overall ${game.player.overall}</span>
             <span class="stage-chip">Moral ${game.player.morale}</span>
+            <span class="stage-chip">Forma ${game.player.form}</span>
             <span class="stage-chip">Energia ${game.player.energy}</span>
-            <span class="stage-chip">Influencia ${game.player.influence}</span>
           </div>
         </div>
         <div class="player-stage-visual">
           <div class="stage-stat-grid">
-            <div class="stage-stat">
-              <span class="mini-label">Gols</span>
-              <strong>${game.player.goals}</strong>
-              <span class="small-copy">na temporada</span>
-            </div>
-            <div class="stage-stat">
-              <span class="mini-label">Assistencias</span>
-              <strong>${game.player.assists}</strong>
-              <span class="small-copy">criando jogo</span>
-            </div>
-            <div class="stage-stat">
-              <span class="mini-label">Jogos</span>
-              <strong>${game.player.matches}</strong>
-              <span class="small-copy">atuacoes registradas</span>
-            </div>
-            <div class="stage-stat">
-              <span class="mini-label">Torcida</span>
-              <strong>${game.club.fanLove}</strong>
-              <span class="small-copy">amor da arquibancada</span>
-            </div>
+            <div class="stage-stat"><span class="mini-label">Gols</span><strong>${game.player.goals}</strong></div>
+            <div class="stage-stat"><span class="mini-label">Assist.</span><strong>${game.player.assists}</strong></div>
+            <div class="stage-stat"><span class="mini-label">Jogos</span><strong>${game.player.matches}</strong></div>
+            <div class="stage-stat"><span class="mini-label">Felicidade</span><strong>${game.player.happiness}</strong></div>
           </div>
         </div>
       </div>
@@ -2256,13 +2374,11 @@ function renderCareerTab(game) {
     <div class="display-panel panel-highlight">
       <div class="section-hero">
         <div class="section-hero-copy">
-          <span class="section-label">Controle de temporada</span>
-          <h2>Painel do atleta</h2>
-          <p class="small-copy">Treine, descanse, avance as rodadas e encare os momentos decisivos com mais estilo e leitura clara.</p>
+          <span class="section-label">Painel do atleta</span>
         </div>
         <div class="section-actions">
           <button id="advance-btn" type="button">${game.seasonSummary ? (game.seasonSummary.forcedRetirement ? "Encerrar carreira" : "Iniciar nova temporada") : game.decision?.choice ? "Entrar em campo" : nextFixture ? "Avancar rodada" : "Fechar temporada"}</button>
-          <button id="train-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Treinar arquetipo</button>
+          <button id="train-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Treinar</button>
           <button id="rest-btn" class="secondary" type="button" ${game.seasonSummary ? "disabled" : ""}>Descansar</button>
         </div>
       </div>
@@ -2274,75 +2390,33 @@ function renderCareerTab(game) {
 
     <div class="career-hub-grid">
       <div class="display-panel panel-highlight">
-        <div class="section-hero-copy">
-          <span class="section-label">Hub da temporada</span>
-          <h2>Calendario e mapa da campanha</h2>
-          <p class="small-copy">Uma leitura rapida do caminho da sua temporada, dos jogos ja vividos ate os proximos pontos de virada.</p>
-        </div>
-        <div style="margin-top: 18px;">
+        <span class="section-label">Calendario</span>
+        <div style="margin-top: 14px;">
           ${renderSeasonCalendar(game)}
         </div>
       </div>
-      <div class="content-stack">
-        <div class="display-panel">
-          <div class="section-hero-copy">
-            <span class="section-label">Central da rodada</span>
-            <h2>Leitura completa do confronto</h2>
-          </div>
-          <div style="margin-top: 16px;">
-            ${renderFixtureDetailCard(game, selectedFixture)}
-          </div>
-        </div>
-        <div class="display-panel">
-          <div class="section-hero-copy">
-            <span class="section-label">Objetivos</span>
-            <h2>Metas do atleta</h2>
-          </div>
-          <div class="objective-grid" style="margin-top: 16px;">
-            ${objectives.map(renderObjectiveCard).join("")}
-          </div>
-        </div>
-        <div class="display-panel panel-highlight">
-          <div class="section-hero-copy">
-            <span class="section-label">Competicao em foco</span>
-            <h2>O proximo grande palco</h2>
-          </div>
-          <div style="margin-top: 16px;">
-            ${renderCompetitionSpotlight(nextFixture, game)}
-          </div>
+      <div class="display-panel">
+        <div style="margin-top: 0;">
+          ${renderFixtureDetailCard(game, selectedFixture)}
         </div>
       </div>
     </div>
 
-    <div class="fixture-split">
-      <div class="display-panel">
-        <span class="section-label">Proximo compromisso</span>
-        <div style="margin-top: 14px;">${nextFixture ? fixtureMarkup(nextFixture, true) : `<p class="small-copy">Todos os jogos da temporada foram concluidos.</p>`}</div>
-      </div>
-      <div class="display-panel">
-        <span class="section-label">Pulso do momento</span>
-        <div class="summary-grid" style="margin-top: 14px;">
-          ${metricCard("Forma", game.player.form)}
-          ${metricCard("Felicidade", game.player.happiness)}
-          ${metricCard("Reputacao", game.player.reputation)}
-          ${metricCard("Diretoria", game.club.boardConfidence)}
-        </div>
+    <div class="display-panel">
+      <span class="section-label">Objetivos</span>
+      <div class="objective-grid" style="margin-top: 14px;">
+        ${objectives.map(renderObjectiveCard).join("")}
       </div>
     </div>
 
     ${latestLive ? renderLiveHud(latestLive, game.player.name, game.player.club) : ""}
 
     <div class="display-panel section-band">
-      <div class="section-hero-copy">
-        <span class="section-label">Rastro da temporada</span>
-        <h2>Ultimas atuacoes</h2>
-      </div>
       <span class="section-label">Rastro da temporada</span>
       <div class="timeline" style="margin-top: 14px;">
         ${recent.length ? recent.map((item) => `
           <div class="timeline-item">
-            <strong>${item.competition}</strong> vs ${item.opponent}<br>
-            <span class="small-copy">${item.result} • ${item.playerGoals} gol(s) • ${item.playerAssists} assistencia(s) • nota ${item.rating}</span>
+            <strong>${item.competition}</strong> vs ${item.opponent} • ${item.result} • ${item.playerGoals}G/${item.playerAssists}A • nota ${item.rating}
           </div>
         `).join("") : `<div class="timeline-item">Seu historico de partidas vai aparecer aqui.</div>`}
       </div>
@@ -2401,18 +2475,22 @@ function renderCareerTab(game) {
 function renderContractTab(game) {
   const panel = document.createElement("div");
   panel.className = "fixture-split";
+  const leverage = game.player.reputation + game.club.fanLove + game.club.boardConfidence;
+  const leverageLabel = leverage >= 160 ? "Alta (aumento forte)" : leverage >= 130 ? "Media (aumento moderado)" : "Baixa (aumento pequeno)";
   panel.innerHTML = `
     <div class="display-panel panel-highlight">
-      <div class="section-hero-copy">
-        <span class="section-label">Contrato</span>
-        <h2>Seu vinculo atual</h2>
-      </div>
+      <span class="section-label">Contrato</span>
       <div class="grid three" style="margin-top: 14px;">
         ${metricCard("Salario", `R$ ${game.contract.salary.toLocaleString("pt-BR")}`)}
-        ${metricCard("Anos restantes", game.contract.yearsLeft)}
+        ${gaugeCard("Anos restantes", game.contract.yearsLeft, { max: 5, copy: game.contract.yearsLeft <= 1 ? "Renovacao urgente" : "" })}
         ${metricCard("Multa", `R$ ${game.contract.releaseClause.toLocaleString("pt-BR")}`)}
       </div>
-      <p class="small-copy" style="margin-top: 14px;">Renovar depende de desempenho, felicidade, carinho da torcida e confianca da diretoria.</p>
+      <div class="grid three" style="margin-top: 14px;">
+        ${gaugeCard("Reputacao", game.player.reputation)}
+        ${gaugeCard("Torcida", game.club.fanLove)}
+        ${gaugeCard("Diretoria", game.club.boardConfidence)}
+      </div>
+      <p class="small-copy" style="margin-top: 14px;">Poder de negociacao: <strong>${leverageLabel}</strong>.</p>
       <div class="button-row" style="margin-top: 16px;">
         <button id="renew-btn" type="button">Tentar renovar</button>
       </div>
@@ -2436,21 +2514,16 @@ function renderAgentTab(game) {
   panel.innerHTML = `
     <div class="fixture-split">
       <div class="display-panel panel-highlight">
-        <div class="section-hero-copy">
-          <span class="section-label">Empresario</span>
-          <h2>Mercado e influencia</h2>
-        </div>
+        <span class="section-label">Empresario</span>
         <div class="grid three" style="margin-top: 14px;">
           ${metricCard("Nivel", game.agent.level)}
-          ${metricCard("Rede", game.agent.network)}
-          ${metricCard("Buzz", game.agent.marketBuzz)}
+          ${gaugeCard("Rede", game.agent.network)}
+          ${gaugeCard("Buzz", game.agent.marketBuzz)}
         </div>
-        <p class="small-copy" style="margin-top: 14px;">Quanto maior o buzz, mais clubes observam voce para possiveis transferencias.</p>
       </div>
       <div class="display-panel">
         <span class="section-label">Mercado</span>
-        <p>${game.player.reputation >= 35 ? "Seu nome ja circula fora do pais." : "Ainda e cedo, mas boas atuacoes podem abrir o mercado."}</p>
-        <p class="small-copy" style="margin-top: 10px;">A base atual ja esta preparada para Brasil, America do Sul, Europa e MLS.</p>
+        <p style="margin-top: 10px;">${game.player.reputation >= 35 ? "Seu nome ja circula fora do pais." : "Ainda e cedo, mas boas atuacoes podem abrir o mercado."}</p>
       </div>
     </div>
     <div class="display-panel">
@@ -2465,7 +2538,7 @@ function renderAgentTab(game) {
               <button class="secondary" type="button" data-reject-offer="${offer.id}">Recusar</button>
             </div>
           </div>
-        `).join("") : `<div class="timeline-item">Ainda nao ha propostas concretas. Jogos grandes aumentam muito o interesse do mercado.</div>`}
+        `).join("") : `<div class="timeline-item">Ainda nao ha propostas concretas.</div>`}
       </div>
     </div>
   `;
@@ -2485,16 +2558,11 @@ function renderCoachTab(game) {
   panel.className = "fixture-split";
   panel.innerHTML = `
     <div class="display-panel panel-highlight">
-      <div class="section-hero">
-        <div class="section-hero-copy">
-          <span class="section-label">Tecnico</span>
-          <h2>Hierarquia e responsabilidade</h2>
-        </div>
-      </div>
+      <span class="section-label">Tecnico</span>
       <div class="grid three" style="margin-top: 14px;">
-        ${metricCard("Confianca", game.coach.trust)}
-        ${metricCard("Risco de banco", game.coach.rotationRisk)}
-        ${metricCard("Hierarquia", game.player.influence)}
+        ${gaugeCard("Confianca", game.coach.trust)}
+        ${gaugeCard("Risco de banco", game.coach.rotationRisk, { invert: true })}
+        ${gaugeCard("Hierarquia", game.player.influence)}
       </div>
       <div class="button-row" style="margin-top: 18px;">
         <button id="captain-btn" class="secondary" type="button">Pedir faixa de capitao</button>
@@ -2504,9 +2572,7 @@ function renderCoachTab(game) {
     </div>
     <div class="display-panel">
       <span class="section-label">Funcoes atuais</span>
-      <p>${game.player.isCaptain ? "Voce ja e capitao." : "Voce ainda busca mais lideranca dentro do elenco."}</p>
-      <p style="margin-top: 10px;">${game.player.setPieces.length ? `Funcoes liberadas: ${game.player.setPieces.join(", ")}.` : "Voce ainda nao assumiu bolas paradas."}</p>
-      <p class="small-copy" style="margin-top: 10px;">O tecnico libera responsabilidades conforme sua influencia e constancia em jogos grandes.</p>
+      <p style="margin-top: 10px;">${game.player.isCaptain ? "Voce ja e capitao." : "Voce ainda busca mais lideranca dentro do elenco."} ${game.player.setPieces.length ? `Bolas paradas liberadas: ${game.player.setPieces.join(", ")}.` : "Ainda sem bolas paradas."}</p>
     </div>
   `;
 
@@ -2525,35 +2591,40 @@ function renderBodyTab(game) {
   panel.innerHTML = `
     <div class="fixture-split">
       <div class="display-panel panel-highlight">
-        <div class="section-hero-copy">
-          <span class="section-label">Corpo e recuperacao</span>
-          <h2>Preparacao para o proximo jogo</h2>
-        </div>
+        <span class="section-label">Corpo e recuperacao</span>
         <div class="grid three" style="margin-top: 14px;">
-          ${metricCard("Condicao", game.body.fitness)}
-          ${metricCard("Frescor", game.body.freshness)}
-          ${metricCard("Risco de lesao", game.body.injuryRisk)}
+          ${gaugeCard("Condicao", game.body.fitness)}
+          ${gaugeCard("Frescor", game.body.freshness)}
+          ${gaugeCard("Risco de lesao", game.body.injuryRisk, { invert: true })}
         </div>
-        <p class="small-copy" style="margin-top: 14px;">Descanso melhora sua condicao para a proxima partida e ajuda a evitar queda de rendimento.</p>
       </div>
       <div class="display-panel">
         <span class="section-label">Longevidade</span>
-        <p>Dos 34 anos em diante, seu overall comeca a cair. Se cair para 62 aos 34+, a aposentadoria automatica encerra a carreira.</p>
-        <p class="small-copy" style="margin-top: 10px;">Se voce for muito decisivo, ainda pode chegar ate os 45 anos antes da aposentadoria final.</p>
+        <div style="margin-top: 10px;">
+          ${gaugeCard("Idade", game.player.age, { max: 34, invert: true, copy: game.player.age >= 34 ? "Fase de declinio ativa" : `${34 - game.player.age} anos ate o declinio` })}
+        </div>
+        <p class="small-copy" style="margin-top: 14px;">Overall cai a partir dos 34 anos; aposentadoria automatica se cair a 62 (ou aos 45, no limite).</p>
       </div>
     </div>
     <div class="display-panel">
       <span class="section-label">Evolucao do jogador</span>
       <div class="grid three" style="margin-top: 14px;">
         ${metricCard("Nivel de desenvolvimento", game.player.development.level)}
-        ${metricCard("XP acumulado", game.player.development.xp)}
+        ${(() => {
+          const thresholds = [0, 40, 90, 150, 230, 320];
+          const nextThreshold = thresholds[game.player.development.level] ?? thresholds[thresholds.length - 1];
+          const prevThreshold = thresholds[game.player.development.level - 1] ?? 0;
+          const span = Math.max(nextThreshold - prevThreshold, 1);
+          const progressInLevel = clamp(game.player.development.xp - prevThreshold, 0, span);
+          return gaugeCard("XP acumulado", game.player.development.xp, { max: nextThreshold || game.player.development.xp || 1, copy: game.player.development.level >= thresholds.length ? "Nivel maximo" : `${progressInLevel}/${span} para o proximo nivel` });
+        })()}
         ${metricCard("Foco atual", game.player.development.focus)}
       </div>
       <div class="button-row" style="margin-top: 16px;">
         ${(developmentTracks[game.player.archetype] ?? []).map((focus) => `<button class="secondary" type="button" data-dev-focus="${focus}">${focus}</button>`).join("")}
       </div>
       <div class="timeline" style="margin-top: 14px;">
-        ${game.player.development.peaks.length ? game.player.development.peaks.slice(0, 4).map((item) => `<div class="timeline-item">${item}</div>`).join("") : `<div class="timeline-item">Seu desenvolvimento ainda vai criar marcos conforme voce acumula treino e jogos grandes.</div>`}
+        ${game.player.development.peaks.length ? game.player.development.peaks.slice(0, 4).map((item) => `<div class="timeline-item">${item}</div>`).join("") : `<div class="timeline-item">Seus marcos de evolucao vao aparecer aqui.</div>`}
       </div>
     </div>
   `;
@@ -2581,9 +2652,9 @@ function renderClubTab(game) {
             </div>
           </div>
           <div class="grid three">
-            ${metricCard("Nivel", game.club.difficulty)}
-            ${metricCard("Diretoria", game.club.boardConfidence)}
-            ${metricCard("Torcida", game.club.fanLove)}
+            ${gaugeCard("Nivel", game.club.difficulty)}
+            ${gaugeCard("Diretoria", game.club.boardConfidence)}
+            ${gaugeCard("Torcida", game.club.fanLove)}
           </div>
           <p class="small-copy">${game.club.rivals.length ? `Rivais mapeados: ${game.club.rivals.join(", ")}.` : "Sem rivalidades destacadas nesta base inicial."}</p>
         </div>
@@ -2591,10 +2662,17 @@ function renderClubTab(game) {
       <div class="display-panel">
         <span class="section-label">Elenco</span>
         <div class="timeline" style="margin-top: 14px;">
-          ${game.club.squad.slice(0, 8).map((athlete) => `<div class="timeline-item">${athlete.position} • ${athlete.name} • overall ${athlete.overall}</div>`).join("")}
+          ${game.club.squad.slice(0, 11).map((athlete) => `<div class="timeline-item">#${athlete.number} ${athlete.position} • ${athlete.name} • ${athlete.age} anos • overall ${athlete.overall}${athlete.isStar ? " • ⭐ Astro do elenco" : athlete.isCaptain ? " • 🎗️ Capitao" : ""}</div>`).join("")}
         </div>
       </div>
     </div>
+    ${getStarTeammate(game.club) ? `
+    <div class="display-panel panel-highlight">
+      <span class="section-label">Parceiro em alta</span>
+      <h2 style="margin-top: 8px;">${getStarTeammate(game.club).name}</h2>
+      <p class="small-copy" style="margin-top: 6px;">${getStarTeammate(game.club).position} • ${getStarTeammate(game.club).age} anos • overall ${getStarTeammate(game.club).overall}</p>
+    </div>
+    ` : ""}
     <div class="display-panel">
       <span class="section-label">Galeria de logos do universo atual</span>
       <div class="reel" style="margin-top: 14px;">
@@ -2623,13 +2701,16 @@ function renderCompetitionsTab() {
   const currentTable = game ? buildCompetitionStandings(game, selected.name) : null;
   const playerRow = currentTable?.find((row) => row.club === game?.player.club);
   const bracketMarkup = game ? renderKnockoutBracket(game, selected.name) : "";
+  const HOF_GOALS_THRESHOLD = 25;
+  const playerCompStats = game?.player?.competitionStats?.[selected.name] ?? { goals: 0, assists: 0, matches: 0 };
+  const isNewRecord = playerCompStats.goals >= HOF_GOALS_THRESHOLD;
+  const allTimeScorerDisplay = isNewRecord
+    ? `${game.player.name} (${playerCompStats.goals})`
+    : selected.allTimeTopScorer;
 
   container.innerHTML = `
     <div class="display-panel panel-highlight">
-      <div class="section-hero-copy">
-        <span class="section-label">Competicoes</span>
-        <h2>Calendario, historia e peso de cada torneio</h2>
-      </div>
+      <span class="section-label">Competicoes</span>
       <div class="catalog-grid" style="margin-top: 14px;">
         ${competitionLibrary.map((competition) => `
           <button class="competition-card ${competition.id === selected.id ? "active" : ""}" type="button" data-competition="${competition.id}">
@@ -2644,46 +2725,32 @@ function renderCompetitionsTab() {
     <div class="fixture-split">
       <div class="display-panel">
         <span class="section-label">${selected.name}</span>
-        <h2 style="margin-top: 10px;">Enciclopedia da competicao</h2>
-        <p class="small-copy" style="margin-top: 10px;">${selected.format}</p>
         <div class="grid two" style="margin-top: 16px;">
           ${metricCard("Artilheiro atual", selected.currentTopScorer)}
-          ${metricCard("Artilheiro historico", selected.allTimeTopScorer)}
+          ${metricCard("Artilheiro historico", allTimeScorerDisplay)}
           ${metricCard("Maior garcom", selected.topAssist)}
           ${metricCard("Maior campeao", selected.recordChampion)}
         </div>
+        ${isNewRecord ? `<p class="small-copy" style="margin-top: 10px; color: var(--accent, #d9ff35);">NOVO RECORDE: sua carreira ja superou a marca historica.</p>` : ""}
         <p class="small-copy" style="margin-top: 16px;">${selected.rivalryNotes}</p>
-        <p class="small-copy" style="margin-top: 8px;">Fonte-base: ${selected.source}.</p>
       </div>
       <div class="display-panel">
-        <span class="section-label">Liga em vitrine</span>
-        <div class="club-card" style="margin-top: 14px;">
-          <div class="club-card-top">
-            ${logoMarkup(selected.name, "competition", true)}
-            <div>
-              <strong>${selected.name}</strong>
-              <span class="small-copy">${selected.region}</span>
-            </div>
-          </div>
-          <div class="top-divider" style="margin: 14px 0;"></div>
-          <p class="small-copy">Ao clicar nas competicoes, o jogador ja pode consultar dados de narrativa, rivalidade, historico e peso do torneio.</p>
+        <span class="section-label">Sua marca nessa competicao</span>
+        <div class="grid two" style="margin-top: 16px;">
+          ${metricCard("Seus gols", playerCompStats.goals)}
+          ${metricCard("Suas assistencias", playerCompStats.assists)}
+          ${metricCard("Seus jogos", playerCompStats.matches)}
+          ${metricCard("Media por jogo", playerCompStats.matches ? (playerCompStats.goals / playerCompStats.matches).toFixed(2) : "0.00")}
         </div>
-        ${renderSourcePanel().outerHTML}
+        ${!game ? `<p class="small-copy" style="margin-top: 12px;">Comece uma carreira para construir seu proprio historico aqui.</p>` : ""}
       </div>
     </div>
     <div class="fixture-split">
       <div class="display-panel panel-highlight">
-        <div class="section-hero-copy">
-          <span class="section-label">${bracketMarkup ? "Chaveamento" : "Classificacao ao vivo"}</span>
-          <h2>${bracketMarkup ? "Mata-mata da competicao" : currentTable ? "Corrida da temporada" : "Leitura de formato"}</h2>
-        </div>
+        <span class="section-label">${bracketMarkup ? "Chaveamento" : "Classificacao ao vivo"}</span>
         ${bracketMarkup ? `
           <div style="margin-top: 16px;">
             ${bracketMarkup}
-          </div>
-          <div class="timeline" style="margin-top: 16px;">
-            <div class="timeline-item">Copas agora mostram o caminho de quartas, semifinal e final em um painel proprio.</div>
-            <div class="timeline-item">Quando houver resultado no seu confronto, o placar e possiveis penaltis aparecem dentro da chave.</div>
           </div>
         ` : currentTable ? `
           <div class="grid four" style="margin-top: 14px;">
@@ -2697,19 +2764,21 @@ function renderCompetitionsTab() {
           </div>
         ` : `
           <div class="timeline" style="margin-top: 14px;">
-            <div class="timeline-item">Essa competicao esta catalogada na enciclopedia e entra na classificacao viva quando usamos o modo de liga na carreira.</div>
-            <div class="timeline-item">Copas e mata-mata vao ganhar chaveamento visual em um proximo passo.</div>
+            <div class="timeline-item">Essa competicao entra na classificacao viva quando voce disputar o modo de liga na carreira.</div>
           </div>
         `}
       </div>
       <div class="display-panel">
-        <div class="section-hero-copy">
-          <span class="section-label">Artilharia</span>
-          <h2>Quem esta decidindo</h2>
-        </div>
+        <span class="section-label">Artilharia</span>
         <div style="margin-top: 14px;">
           ${game ? renderScorersTable(game, selected.name) : `<div class="timeline-item">Comece uma carreira para ver a corrida de gols.</div>`}
         </div>
+      </div>
+    </div>
+    <div class="display-panel section-band">
+      <span class="section-label">Historico: sua carreira, temporada a temporada</span>
+      <div style="margin-top: 14px;">
+        ${renderCareerHistoryTable(game)}
       </div>
     </div>
   `;
@@ -2723,15 +2792,35 @@ function renderCompetitionsTab() {
   return container;
 }
 
+function renderCareerHistoryTable(game) {
+  const history = game?.careerHistory ?? [];
+  if (!history.length) {
+    return `<div class="timeline-item">Feche sua primeira temporada para comecar a construir seu historico de carreira.</div>`;
+  }
+
+  return `
+    <div class="standings-table">
+      ${[...history].reverse().map((entry) => `
+        <div class="standings-row">
+          <span class="standings-pos">${entry.year}</span>
+          <span class="standings-club">${entry.club}</span>
+          <span>${entry.overall} OVR</span>
+          <span>${entry.goals} G</span>
+          <span>${entry.assists} A</span>
+          <span>${entry.matches} J</span>
+          <span>${entry.trophies?.length ? entry.trophies.join(", ") : "Sem titulos"}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 function renderSocialTab(game) {
   const panel = document.createElement("div");
   panel.className = "fixture-split";
   panel.innerHTML = `
     <div class="display-panel panel-highlight">
-      <div class="section-hero-copy">
-        <span class="section-label">Rede social</span>
-        <h2>Imagem publica do atleta</h2>
-      </div>
+      <span class="section-label">Rede social</span>
       <div class="button-row" style="margin-top: 14px;">
         <button id="react-support" class="secondary" type="button">Reagir apoiando</button>
         <button id="react-neutral" class="secondary" type="button">Reagir com cautela</button>
@@ -2749,8 +2838,7 @@ function renderSocialTab(game) {
     </div>
     <div class="display-panel">
       <span class="section-label">Personalidade publica</span>
-      <p>${game.player.happiness >= 75 ? "Sua imagem e muito positiva." : game.player.happiness >= 55 ? "Voce esta construindo uma boa relacao com publico e imprensa." : "Sua imagem publica precisa de mais cuidado."}</p>
-      <p class="small-copy" style="margin-top: 10px;">Fas, reporteres, diretoria e elenco podem reagir as suas escolhas fora de campo.</p>
+      <p style="margin-top: 10px;">${game.player.happiness >= 75 ? "Sua imagem e muito positiva." : game.player.happiness >= 55 ? "Voce esta construindo uma boa relacao com publico e imprensa." : "Sua imagem publica precisa de mais cuidado."}</p>
       <div class="button-row" style="margin-top: 18px;">
         <button id="reset-btn" class="secondary" type="button">Reiniciar carreira</button>
       </div>
@@ -2767,6 +2855,9 @@ function renderSocialTab(game) {
   return panel;
 }
 
+// =====================================================================
+// ROTEAMENTO DE ABAS E RENDER PRINCIPAL: ponto de entrada da aplicacao
+// =====================================================================
 function renderActiveTab(game) {
   switch (state.tab) {
     case "contrato": return renderContractTab(game);
